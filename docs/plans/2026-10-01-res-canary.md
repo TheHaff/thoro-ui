@@ -1,21 +1,16 @@
-# web-res-canary Implementation Plan
+# res-canary Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship `web-res-canary`: a zero-dependency browser package that detects when a user's browser or network blocks the third-party resources a web app depends on, and a `<web-res-canary>` custom element that tells the user what won't work and gives their IT team the addresses to allow.
+**Goal:** Turn the repo into the thoro-ui workspace and ship its first component, `res-canary`: a zero-dependency headless core (`thoro-ui/res-canary`) that detects when a user's browser or network blocks the third-party resources a web app depends on, and a `<thoro-res-canary>` custom element (`thoro-ui/res-canary/element`) that tells the user what won't work and gives their IT team the addresses to allow.
 
-**Architecture:** A headless core (`web-res-canary`) listens for `securitypolicyviolation` events and capture-phase resource `error` events, runs optional startup probes, and keeps a per-feature status that only moves up in specificity. A separate entry (`web-res-canary/element`) defines a plain custom element with a shadow root styled by a constructed stylesheet; it renders a core snapshot in uncontrolled mode or caller-supplied items in controlled mode.
+**Architecture:** A pnpm workspace whose only published package is `packages/thoro-ui`, with one entry point per component and no root entry. The canary's core listens for `securitypolicyviolation` events and capture-phase resource `error` events, runs optional startup probes, and keeps a per-feature status that only moves up in specificity. Its element entry defines a plain custom element with a shadow root styled by a constructed stylesheet; it renders a core snapshot in uncontrolled mode or caller-supplied items in controlled mode.
 
-**Tech Stack:** TypeScript 7 (strict, `isolatedDeclarations`), tsdown, Vitest 5 + happy-dom, Playwright (Chromium, Firefox, WebKit), oxlint, oxfmt, size-limit, pnpm 11, Node 24+ for tooling.
+**Tech Stack:** Vite+ 1.0.0 (bundles Vitest 5.0.1, tsdown 0.23.0, oxlint 1.85.0, oxfmt 0.70.0), TypeScript 7.0.2 (strict, `isolatedDeclarations`), happy-dom 20.14.5, Playwright 1.63.0 (Chromium, Firefox, WebKit), size-limit 14.1.0, pnpm 12.8.1 workspace, Node 24.
 
-**Spec:** `docs/specs/2026-09-29-web-res-canary-design.md` — read it alongside this plan.
+**Specs:** `docs/specs/2026-10-01-thoro-ui-design.md` (collection rules: layout, naming, theming, tooling) and `docs/specs/2026-09-29-res-canary-design.md` (the canary). Read both alongside this plan.
 
-**Tooling amendment (2026-09-30, maintainer's choice):** Vite+ (`vite-plus@1.0.0`) replaces the standalone oxlint, oxfmt, Vitest and tsdown packages. It bundles tsdown 0.23.0, Vitest 5.0.1, oxlint 1.85.0 and oxfmt 0.70.0, and reads all four configs from one `vite.config.ts`. pnpm is 12.8.1; Node is 24 locally too (Vite+ supports `^24.11 || >=26`). Where a task below disagrees, this wins:
-
-- **Task 1:** no `oxlint.config.ts` / `oxfmt.config.ts` — their settings are the `lint` and `fmt` blocks of `vite.config.ts` (lint also sets `options.typeAware: true`). Install `vite-plus` instead of `oxlint` / `oxfmt`. Scripts: `vp lint`, `vp fmt`, `vp fmt --check`. The fixture server sends the CSP with `res.setHeader`, because `@types/node` types that header as a single string in `writeHead`.
-- **Task 2:** no `vitest.config.ts` and no `vitest` install — the same options go in the `test` block of `vite.config.ts`; install only `happy-dom@20.14.5`. tsconfig `types` gets `vite-plus/test/globals`. Script: `"test": "vp test"`.
-- **Task 8:** no `tsdown.config.ts` and no `tsdown` install — the same options go in the `pack` block. Script: `"build": "vp pack"`.
-- **Unchanged:** `pnpm typecheck` stays `tsc -p .` (typescript@7.0.2), because `vp check` does not report `isolatedDeclarations` errors. Playwright, size-limit and the CI steps (which call `pnpm <script>`) are unchanged.
+**Where this starts:** this plan replaces `docs/plans/2026-09-29-web-res-canary.md`, written when the canary was a standalone package. That plan's Task 1 is already done and committed at the repo root: Vite+ tooling (`package.json`, `vite.config.ts`, `tsconfig.json`, `.gitignore`, `.node-version`, `pnpm-lock.yaml`), the Playwright config, and `test/browser/` (fixture server, stylesheet check). It passed in Chromium and WebKit; the Firefox run is still open. Task 1 below moves that work into the workspace layout.
 
 ## Global Constraints
 
@@ -25,18 +20,22 @@
 - The DOM is built with `createElement`, `createElementNS` and `textContent` only. No `innerHTML`, `insertAdjacentHTML` or `outerHTML`.
 - No `eval`, `new Function`, or string timers. No inline event handlers.
 - No network requests other than the configured probes. No fonts, icons or scripts from a CDN.
-- ESM only, with `.d.ts`. `"type": "module"`. `exports`: `"."` → core, `"./element"` → element. `"sideEffects": ["./dist/element.js"]`.
+- ESM only, with `.d.ts`. `"type": "module"`. `exports`: `"./res-canary"` → `./dist/res-canary/index.js`, `"./res-canary/element"` → `./dist/res-canary/element.js`, plus `"./package.json"`; no `"."` entry. `"sideEffects": ["./dist/*/element.js"]`.
+- Names (collection spec §2): tag `thoro-res-canary`; `defineResCanaryElement(tag?)`; events `res-canary-dismiss` and `res-canary-copy`; theme variables `--thoro-bg`, `--thoro-fg`, `--thoro-border`, `--thoro-accent`, `--thoro-radius`, `--thoro-font`.
 - Size budget: core ≤ 2 KB gzip, element (including core) ≤ 4 KB gzip.
 - Browser support: current evergreen browsers; Safari 16.4+.
-- Defaults: `storageKey` `'web-res-canary:dismissed'`; `probeTimeoutMs` `15000` (`0` disables).
+- Defaults: `storageKey` `'thoro-ui:res-canary:dismissed'`; `probeTimeoutMs` `15000` (`0` disables).
 - Default strings, verbatim: `title` "Some features couldn't load"; `cause` "This is usually caused by a browser extension or your network settings."; `details` "Details"; `itAsk` "Ask your IT team to allow these addresses:"; `copy` "Copy for IT"; `copied` "Copied"; `dismiss` "Dismiss".
 - This is a public repo: examples and tests use `*.example`, `*.invalid` and `127.0.0.1` hosts only — no company, customer or vendor names.
 - Formatting: oxfmt with `semi: false`, `singleQuote: true`, `printWidth: 120`, `trailingComma: 'all'`, `arrowParens: 'avoid'`.
+- Tooling: Vite+ only — don't add `oxlint`, `oxfmt`, `vitest` or `tsdown` as dependencies or give them their own config files. `pnpm typecheck` (`tsc`) is the type check, because `vp check` does not report `isolatedDeclarations` errors.
+- Commands: run root scripts from the repo root (`pnpm test`). To pass arguments — one test file, one browser — run the package script: `pnpm -C packages/thoro-ui test test/unit/res-canary/origins.test.ts`.
+- Node 24 (`.node-version`); Vite+ supports `^24.11 || >=26`. pnpm 12.8.1 (`packageManager`).
 - **Git: the maintainer makes every commit.** Each task ends with a hand-off step: list the changed files and propose a commit message. Never run `git add` or `git commit`.
 
 ## Review Focus
 
-1. **Properties set before the element is defined** (markup-first pages, or a framework rendering before `import 'web-res-canary/element'` runs) → the element still picks them up on upgrade. Test: Task 7.
+1. **Properties set before the element is defined** (markup-first pages, or a framework rendering before `import 'thoro-ui/res-canary/element'` runs) → the element still picks them up on upgrade. Test: Task 7.
 2. **Unbound methods** — `useSyncExternalStore(canary.subscribe, canary.getSnapshot)` passes them without `this` → both still work. Test: Task 4.
 3. **An invalid page `lang`** such as `lang="en_US"` (`Intl.ListFormat` throws `RangeError`) → the banner still renders, joining labels in English. Tests: Tasks 6 and 7.
 4. **A global RegExp for `ownPolicy`** (`/marker/g`) → every violation is classified the same way; `lastIndex` must not make results alternate. Test: Task 4.
@@ -45,89 +44,79 @@
 ## File Structure
 
 ```
-AGENTS.md, CLAUDE.md, LICENSE      already present — working rules; don't recreate
-package.json, pnpm-lock.yaml, tsconfig.json, .gitignore, .node-version
-oxlint.config.ts, oxfmt.config.ts, vitest.config.ts, playwright.config.ts, tsdown.config.ts, .size-limit.json
+AGENTS.md, CLAUDE.md, LICENSE, README.md     repo root; AGENTS.md is rewritten in Task 1
+package.json                                 private workspace root: scripts + shared dev tooling
+pnpm-workspace.yaml                          packages/*, examples/*
+vite.config.ts                               fmt + lint for the whole repo
+tsconfig.base.json                           shared compiler options
+.gitignore, .node-version, pnpm-lock.yaml
 .github/workflows/ci.yml
-README.md
-src/
-  index.ts            core entry: createCanary + public types
-  element.ts          element entry: defines <web-res-canary>; exports defineCanaryElement, mountBanner, strings
-  types.ts            every public type
-  origins.ts          CSP host-source parsing and matching
-  status.ts           status precedence, blocked list, dismissal signature (pure)
-  dismissal.ts        safe storage for the dismissal signature
-  probes.ts           startup probes (preload, image, fetch, custom) with timeout
-  canary.ts           createCanary: validation, listeners, store, API
-  ui/strings.ts       default strings + resolveStrings
-  ui/styles.ts        CSS text + lazily constructed shared sheet
-  ui/render.ts        builds the element's shadow DOM from items (no state)
-  ui/element.ts       the custom element class, defineCanaryElement, mountBanner
-test/
-  unit/*.test.ts      Vitest (happy-dom)
-  ssr.ts              imports the built package in plain Node
-  browser/server.ts   fixture server: app origin :4173, "vendor" origin :4174
-  browser/globals.d.ts
-  browser/fixtures/sheet-check.js, harness.js
-  browser/*.spec.ts   Playwright
-examples/vanilla/index.html, main.js
-examples/react/app.tsx
+packages/thoro-ui/                           the only published package
+  package.json, vite.config.ts (test + pack), tsconfig.json, playwright.config.ts, .size-limit.json
+  README.md, LICENSE                         what npm shows and ships
+  src/res-canary/
+    index.ts            core entry: createCanary + public types
+    element.ts          element entry: defines <thoro-res-canary>; exports defineResCanaryElement, mountBanner, strings
+    types.ts            every public type
+    origins.ts          CSP host-source parsing and matching
+    status.ts           status precedence, blocked list, dismissal signature (pure)
+    dismissal.ts        safe storage for the dismissal signature
+    probes.ts           startup probes (preload, image, fetch, custom) with timeout
+    canary.ts           createCanary: validation, listeners, store, API
+    ui/strings.ts       default strings + resolveStrings
+    ui/styles.ts        CSS text + lazily constructed shared sheet
+    ui/render.ts        builds the element's shadow DOM from items (no state)
+    ui/element.ts       the custom element class, defineResCanaryElement, mountBanner
+  test/
+    unit/res-canary/*.test.ts      Vitest (happy-dom)
+    ssr.ts                         imports the built package in plain Node
+    browser/server.ts              fixture server shared by all components: app :4173, "vendor" :4174
+    browser/globals.d.ts
+    browser/stylesheet.spec.ts     the strict-CSP styling check every component relies on
+    browser/fixtures/sheet-check.js, res-canary-harness.js
+    browser/res-canary/*.spec.ts   Playwright
+examples/
+  vanilla/    private Vite app: package.json, index.html, main.js
+  react/      private, type-checked: package.json, tsconfig.json, app.tsx
 ```
 
 ---
 
-### Task 1: Tooling scaffold and the strict-CSP stylesheet check
+### Task 1: Workspace layout
 
-The spec's only unverified assumption (§7) is that constructed stylesheets are not blocked by a strict `style-src` in all three engines. This task sets up the tooling and proves it before any package code depends on it.
+Moves the finished tooling and the stylesheet check from the repo root into `packages/thoro-ui`, adds the workspace root, rewrites AGENTS.md, and re-runs every check. No component code yet.
 
 **Files:**
 
-- Create: `package.json`, `tsconfig.json`, `.gitignore`, `.node-version`, `oxlint.config.ts`, `oxfmt.config.ts`, `playwright.config.ts`
-- Create: `test/browser/server.ts`, `test/browser/globals.d.ts`, `test/browser/fixtures/sheet-check.js`
-- Test: `test/browser/stylesheet.spec.ts`
+- Create: `pnpm-workspace.yaml`, `tsconfig.base.json`, `packages/thoro-ui/package.json`, `packages/thoro-ui/vite.config.ts`, `packages/thoro-ui/tsconfig.json`
+- Move: `playwright.config.ts` → `packages/thoro-ui/playwright.config.ts`; `test/` → `packages/thoro-ui/test/`
+- Modify: `package.json` (becomes the private root), `vite.config.ts` (comment, ignore globs), `packages/thoro-ui/test/browser/server.ts` (page title, required `script`, drop `/examples/`), `AGENTS.md` (rewrite), `pnpm-lock.yaml` (by `pnpm install`)
+- Delete: `tsconfig.json` (replaced by `tsconfig.base.json` + the package's own)
+- Test: `packages/thoro-ui/test/browser/stylesheet.spec.ts` (existing, unchanged)
 
 **Interfaces:**
 
-- Consumes: nothing.
-- Produces: the fixture server used by Task 9 — `GET /page?csp=<allowed|foreign|own-blocks|strict>&script=<name>` returns an HTML page with that CSP that loads `/fixtures/<name>.js` (default `harness`); `/dist/*`, `/fixtures/*`, `/examples/*` are static; the vendor origin `http://127.0.0.1:4174` serves `/widget.js`, `/widget.css`, `/pixel.svg` and never answers `/hang`. The own-policy marker is `https://own-marker.invalid`.
+- Consumes: the existing root files listed above.
+- Produces: the workspace every later task works in. Package scripts `typecheck` (`tsc -p .`) and `test:browser` (`playwright test`); root scripts `format`, `format:check`, `lint`, `typecheck` (`vp run -r typecheck`), `test:browser` (`vp run -r test:browser`). The fixture server (used by Task 9): `GET /page?csp=<allowed|foreign|own-blocks|strict>&script=<name>` returns an HTML page with that CSP that loads `/fixtures/<name>.js`; `script` is required. `/dist/*` and `/fixtures/*` are static, served from `packages/thoro-ui/`. The vendor origin `http://127.0.0.1:4174` serves `/widget.js`, `/widget.css`, `/pixel.svg` and never answers `/hang`. The own-policy marker is `https://own-marker.invalid`.
 
-- [ ] **Step 1: Create `package.json`**
+- [ ] **Step 1: Move the package's files into place**
 
-```json
-{
-  "name": "web-res-canary",
-  "version": "0.0.0",
-  "description": "Tell users when their browser or network blocks the third-party resources your web app depends on.",
-  "keywords": ["csp", "content-security-policy", "custom-element", "web-component", "ad-blocker", "firewall"],
-  "license": "MIT",
-  "author": "Haff",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/TheHaff/web-res-canary.git"
-  },
-  "type": "module",
-  "scripts": {
-    "format": "oxfmt --write .",
-    "format:check": "oxfmt --check .",
-    "lint": "oxlint .",
-    "test:browser": "playwright test",
-    "typecheck": "tsc -p ."
-  },
-  "packageManager": "pnpm@11.27.0"
-}
+Run: `mkdir -p packages/thoro-ui && mv playwright.config.ts test packages/thoro-ui/ && rm tsconfig.json`
+Expected: `packages/thoro-ui/playwright.config.ts` and `packages/thoro-ui/test/browser/{server.ts,globals.d.ts,stylesheet.spec.ts,fixtures/sheet-check.js}` exist; no `tsconfig.json`, `playwright.config.ts` or `test/` at the root.
+
+The fixture server finds its files relative to itself (`join(import.meta.dirname, '..', '..')`), so after the move it serves `packages/thoro-ui/dist/` and `packages/thoro-ui/test/browser/fixtures/` without further changes.
+
+- [ ] **Step 2: Create the workspace files**
+
+`pnpm-workspace.yaml`:
+
+```yaml
+packages:
+  - packages/*
+  - examples/*
 ```
 
-- [ ] **Step 2: Install the tooling**
-
-Run: `pnpm add -D -E typescript@7.0.2 @types/node@26.6.3 oxlint@1.86.0 oxfmt@0.71.0 @playwright/test@1.63.0`
-Expected: `pnpm-lock.yaml` created; five entries under `devDependencies`. If pnpm reports ignored build scripts, ignore it — none of these packages need one.
-
-Run: `pnpm exec playwright install chromium firefox webkit`
-Expected: three browsers downloaded (a few minutes, ~500 MB the first time).
-
-- [ ] **Step 3: Create the config files**
-
-`tsconfig.json` (test files are type-checked too; config files are left to their own tools because `isolatedDeclarations` rejects `export default defineConfig(...)`):
+`tsconfig.base.json` (the old `tsconfig.json` options, minus `types` and `include`, which each package sets):
 
 ```json
 {
@@ -136,7 +125,6 @@ Expected: three browsers downloaded (a few minutes, ~500 MB the first time).
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["node"],
     "strict": true,
     "noEmit": true,
     "declaration": true,
@@ -144,299 +132,271 @@ Expected: three browsers downloaded (a few minutes, ~500 MB the first time).
     "verbatimModuleSyntax": true,
     "allowImportingTsExtensions": true,
     "skipLibCheck": true
+  }
+}
+```
+
+Replace the root `package.json` with the private workspace root. Shared tooling stays here; `@playwright/test` moves to the package:
+
+```json
+{
+  "name": "thoro-ui-workspace",
+  "private": true,
+  "description": "Workspace for thoro-ui, a collection of compliance-focused web components.",
+  "license": "MIT",
+  "author": "Haff",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheHaff/thoro-ui.git"
+  },
+  "type": "module",
+  "scripts": {
+    "format": "vp fmt",
+    "format:check": "vp fmt --check",
+    "lint": "vp lint",
+    "test:browser": "vp run -r test:browser",
+    "typecheck": "vp run -r typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.3",
+    "typescript": "7.0.2",
+    "vite-plus": "1.0.0"
+  },
+  "packageManager": "pnpm@12.8.1"
+}
+```
+
+- [ ] **Step 3: Create the package files**
+
+`packages/thoro-ui/package.json`:
+
+```json
+{
+  "name": "thoro-ui",
+  "version": "0.0.0",
+  "description": "Small, dependency-free web components for compliance-minded web apps. First up: tell users when their browser or network blocks the third-party resources your app depends on.",
+  "keywords": [
+    "ad-blocker",
+    "compliance",
+    "content-security-policy",
+    "csp",
+    "custom-element",
+    "firewall",
+    "web-component",
+    "web-components"
+  ],
+  "license": "MIT",
+  "author": "Haff",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheHaff/thoro-ui.git",
+    "directory": "packages/thoro-ui"
+  },
+  "type": "module",
+  "scripts": {
+    "test:browser": "playwright test",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}
+```
+
+`packages/thoro-ui/tsconfig.json`:
+
+```json
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"]
   },
   "include": ["src", "test"]
 }
 ```
 
-`.gitignore`:
-
-```
-node_modules/
-dist/
-coverage/
-playwright-report/
-test-results/
-*.tgz
-```
-
-`.node-version`:
-
-```
-24
-```
-
-`oxlint.config.ts`:
+`packages/thoro-ui/vite.config.ts` — only the unit-test file pattern for now; Task 2 completes the `test` block and Task 8 adds `pack`. Creating it here proves the package can load `vite-plus` from the root install:
 
 ```ts
-import { defineConfig } from 'oxlint'
+import { defineConfig } from 'vite-plus'
 
+// The package's Vite+ config: `test` and (from Task 8) `pack`. fmt and lint live in the root config.
 export default defineConfig({
-  plugins: ['typescript', 'unicorn', 'oxc', 'import'],
-  categories: {
-    correctness: 'error',
+  test: {
+    // Vitest's default pattern would also pick up the Playwright specs in test/browser.
+    include: ['test/unit/**/*.test.ts'],
   },
-  ignorePatterns: ['dist/**', 'node_modules/**', 'playwright-report/**', 'test-results/**'],
 })
 ```
 
-`oxfmt.config.ts`:
+- [ ] **Step 4: Point the root config at the whole workspace**
+
+In the root `vite.config.ts`, replace the comment above `export default` with:
 
 ```ts
-import { defineConfig } from 'oxfmt'
-
-export default defineConfig({
-  arrowParens: 'avoid',
-  bracketSpacing: true,
-  endOfLine: 'lf',
-  printWidth: 120,
-  proseWrap: 'preserve',
-  semi: false,
-  singleQuote: true,
-  sortPackageJson: true,
-  tabWidth: 2,
-  trailingComma: 'all',
-  useTabs: false,
-})
+// Repo-wide fmt (oxfmt) and lint (oxlint). Each package's own vite.config.ts holds its test and pack blocks.
 ```
 
-`playwright.config.ts`:
+and make the lint ignore patterns match at any depth:
 
 ```ts
-import { defineConfig, devices } from '@playwright/test'
-
-export default defineConfig({
-  testDir: 'test/browser',
-  forbidOnly: !!process.env.CI,
-  reporter: process.env.CI ? 'github' : 'list',
-  use: { baseURL: 'http://127.0.0.1:4173' },
-  webServer: {
-    command: 'node test/browser/server.ts',
-    url: 'http://127.0.0.1:4173/health',
-    reuseExistingServer: !process.env.CI,
-  },
-  projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
-  ],
-})
+    ignorePatterns: ['**/dist/**', 'node_modules/**', '**/playwright-report/**', '**/test-results/**'],
 ```
 
-- [ ] **Step 4: Create the fixture server**
+Keep the existing comment above `ignorePatterns` and everything else unchanged.
 
-`test/browser/server.ts` runs on Node's built-in TypeScript support, so it uses only erasable syntax and explicit file extensions.
+- [ ] **Step 5: Update the fixture server**
+
+In `packages/thoro-ui/test/browser/server.ts`:
+
+The page title no longer names a component:
 
 ```ts
-import { readFile } from 'node:fs/promises'
-import { createServer, type ServerResponse } from 'node:http'
-import { extname, join, normalize, sep } from 'node:path'
-
-const ROOT = normalize(join(import.meta.dirname, '..', '..'))
-const APP_PORT = 4173
-const VENDOR_PORT = 4174
-const VENDOR = `http://127.0.0.1:${VENDOR_PORT}`
-// Stands in for "something unique to your own policy". The harness passes it as ownPolicy.
-const OWN_MARKER = 'https://own-marker.invalid'
-
-// Our own policy: allows the vendor everywhere it is used.
-const OWN = [
-  "default-src 'self'",
-  "script-src 'self'",
-  `script-src-elem 'self' ${VENDOR}`,
-  `style-src 'self' ${VENDOR}`,
-  `img-src 'self' ${VENDOR}`,
-  `connect-src 'self' ${VENDOR} ${OWN_MARKER}`,
-].join('; ')
-
-// A second policy, as a browser extension or corporate proxy would add. Blocks the vendor.
-const FOREIGN = ["script-src-elem 'self'", "style-src 'self'", "img-src 'self'", "connect-src 'self'"].join('; ')
-
-// Our own policy, but it forgot the vendor.
-const OWN_WITHOUT_VENDOR = [
-  "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self'",
-  "img-src 'self'",
-  `connect-src 'self' ${OWN_MARKER}`,
-].join('; ')
-
-const STRICT = `${OWN}; require-trusted-types-for 'script'; trusted-types 'none'`
-
-const POLICIES: Record<string, string[]> = {
-  allowed: [OWN],
-  foreign: [OWN, FOREIGN],
-  'own-blocks': [OWN_WITHOUT_VENDOR],
-  strict: [STRICT],
-}
-
-const TYPES: Record<string, string> = {
-  '.css': 'text/css; charset=utf-8',
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.map': 'application/json; charset=utf-8',
-  '.svg': 'image/svg+xml',
-}
-
-const VENDOR_ASSETS: Record<string, { body: string; type: string }> = {
-  '/pixel.svg': { body: '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>', type: TYPES['.svg'] },
-  '/widget.css': { body: 'html {}\n', type: TYPES['.css'] },
-  '/widget.js': { body: 'globalThis.vendorWidgetLoaded = true\n', type: TYPES['.js'] },
-}
-
-function pageHtml(script: string): string {
-  return [
-    '<!doctype html>',
-    '<html lang="en">',
-    '<head>',
-    '<meta charset="utf-8">',
-    '<title>web-res-canary test page</title>',
-    `<script type="module" src="/fixtures/${script}.js"></script>`,
-    '</head>',
-    '<body></body>',
-    '</html>',
-    '',
-  ].join('\n')
-}
-
-async function sendFile(res: ServerResponse, relativePath: string): Promise<void> {
-  const path = normalize(join(ROOT, relativePath))
-  if (!path.startsWith(ROOT + sep)) {
-    res.writeHead(403).end()
-    return
-  }
-  try {
-    const body = await readFile(path)
-    res.writeHead(200, { 'content-type': TYPES[extname(path)] ?? 'application/octet-stream' })
-    res.end(body)
-  } catch {
-    res.writeHead(404).end()
-  }
-}
-
-createServer((req, res) => {
-  const { pathname, searchParams } = new URL(req.url ?? '/', `http://127.0.0.1:${APP_PORT}`)
-  if (pathname === '/health') {
-    res.end('ok')
-    return
-  }
-  if (pathname === '/page') {
-    const policy = POLICIES[searchParams.get('csp') ?? 'allowed']
-    const script = searchParams.get('script') ?? 'harness'
-    if (!policy || !/^[a-z-]+$/.test(script)) {
-      res.writeHead(400).end('bad csp or script')
-      return
-    }
-    // An array value sends one header line per policy; the browser enforces every one.
-    res.writeHead(200, { 'content-security-policy': policy, 'content-type': TYPES['.html'] })
-    res.end(pageHtml(script))
-    return
-  }
-  if (pathname.startsWith('/fixtures/')) {
-    void sendFile(res, `test/browser${pathname}`)
-    return
-  }
-  if (pathname.startsWith('/dist/') || pathname.startsWith('/examples/')) {
-    void sendFile(res, pathname.slice(1))
-    return
-  }
-  res.writeHead(404).end()
-}).listen(APP_PORT, '127.0.0.1')
-
-createServer((req, res) => {
-  const { pathname } = new URL(req.url ?? '/', VENDOR)
-  // Never answers: stands in for a firewall that silently drops the request.
-  if (pathname === '/hang') return
-  const asset = VENDOR_ASSETS[pathname]
-  if (!asset) {
-    res.writeHead(404).end()
-    return
-  }
-  res.writeHead(200, { 'access-control-allow-origin': '*', 'content-type': asset.type })
-  res.end(asset.body)
-}).listen(VENDOR_PORT, '127.0.0.1')
+    '<title>thoro-ui test page</title>',
 ```
 
-- [ ] **Step 5: Create the stylesheet fixture and its global type**
-
-`test/browser/fixtures/sheet-check.js` — no package code involved; it isolates the browser behaviour the element relies on:
-
-```js
-// Does a constructed stylesheet adopted by a shadow root apply under style-src 'self'
-// (no 'unsafe-inline') and Trusted Types? The element depends on the answer being yes.
-const violations = []
-document.addEventListener('securitypolicyviolation', event => {
-  violations.push(`${event.effectiveDirective} ${event.blockedURI}`)
-})
-
-class SheetCheck extends HTMLElement {
-  constructor() {
-    super()
-    const sheet = new CSSStyleSheet()
-    sheet.replaceSync('.box { padding-left: 17px; }')
-    const root = this.attachShadow({ mode: 'open' })
-    root.adoptedStyleSheets = [sheet]
-    const box = document.createElement('div')
-    box.className = 'box'
-    box.textContent = 'box'
-    root.append(box)
-  }
-}
-
-customElements.define('sheet-check', SheetCheck)
-document.body.append(document.createElement('sheet-check'))
-
-globalThis.sheetCheck = {
-  paddingLeft: () =>
-    getComputedStyle(document.querySelector('sheet-check').shadowRoot.querySelector('.box')).paddingLeft,
-  violations,
-}
-```
-
-`test/browser/globals.d.ts`:
+`script` becomes required — the server is shared by every component, so it must not default to one component's harness. Replace the `/page` handler's two lookups and the check with:
 
 ```ts
-declare global {
-  var sheetCheck: { paddingLeft(): string; violations: string[] }
+const policy = POLICIES[searchParams.get('csp') ?? 'allowed']
+const script = searchParams.get('script')
+if (!policy || !script || !/^[a-z-]+$/.test(script)) {
+  res.writeHead(400).end('bad csp or script')
+  return
 }
-
-export {}
 ```
 
-- [ ] **Step 6: Write the browser test**
-
-`test/browser/stylesheet.spec.ts`:
+The examples now run on the Vite dev server (Task 10), so drop the `/examples/` route:
 
 ```ts
-import { expect, test } from '@playwright/test'
-
-// Module scripts run before the load event that goto() waits for, so the fixture is ready.
-// Only page.evaluate is used: it goes through the automation protocol, not the page's (blocked) eval.
-test('constructed stylesheets apply under a strict style-src and Trusted Types', async ({ page }) => {
-  await page.goto('/page?csp=strict&script=sheet-check')
-  const result = await page.evaluate(() => ({ padding: sheetCheck.paddingLeft(), violations: sheetCheck.violations }))
-  expect(result.violations).toEqual([])
-  expect(result.padding).toBe('17px')
-})
+if (pathname.startsWith('/dist/')) {
+  void sendFile(res, pathname.slice(1))
+  return
+}
 ```
 
-- [ ] **Step 7: Run it in all three engines**
+- [ ] **Step 6: Rewrite `AGENTS.md`**
 
-Run: `pnpm test:browser`
-Expected: `3 passed` (chromium, firefox, webkit).
+Replace the whole file with:
 
-If `violations` is non-empty, read each entry before concluding anything: a `style-src` entry means the constructed sheet was blocked; a `script-src`/`trusted-types` entry with `blockedURI` `eval` would come from the test tooling, not the stylesheet — report that separately.
+````markdown
+# thoro-ui — agent guide
 
-**If any engine fails because of the stylesheet, stop here and report the failing engine and its output to the maintainer.** The fallback (a `nonce` property applied to a `<style>` element, spec §7) changes the element's design and needs their approval before Task 6.
+thoro-ui is a collection of small, dependency-free web components for compliance-minded web apps, published as one tree-shakeable npm package with an entry point per component (`thoro-ui/<name>`, `thoro-ui/<name>/element`). The first component is the resource canary, `<thoro-res-canary>`: it detects when a user's browser or network blocks the third-party resources a web app depends on, tells the user what won't work, and gives their IT team the addresses to allow.
 
-- [ ] **Step 8: Lint, format, type-check**
+## Status
+
+- **Collection spec:** [`docs/specs/2026-10-01-thoro-ui-design.md`](docs/specs/2026-10-01-thoro-ui-design.md) — layout, naming, theming and tooling rules every component follows.
+- **Canary spec:** [`docs/specs/2026-09-29-res-canary-design.md`](docs/specs/2026-09-29-res-canary-design.md)
+- **Implementation plan:** [`docs/plans/2026-10-01-res-canary.md`](docs/plans/2026-10-01-res-canary.md) — 10 tasks, each with files, code, tests and commands. Do them in order.
+
+If a plan and a spec disagree, the spec wins — flag the conflict to the maintainer instead of silently picking one. Don't reopen the decisions recorded in the specs' decision tables without a new reason.
+
+## Layout
+
+```
+package.json, pnpm-workspace.yaml   private workspace root
+vite.config.ts                      fmt + lint for the whole repo
+tsconfig.base.json                  shared compiler options
+packages/thoro-ui/                  the only published package
+  vite.config.ts                    test + pack
+  src/<name>/                       one folder per component; src/shared/ only once two components need it
+  test/unit/<name>/                 Vitest (happy-dom)
+  test/browser/                     Playwright: shared fixture server, fixtures/, <name>/*.spec.ts
+examples/                           private workspace packages that use thoro-ui
+docs/specs, docs/plans
+```
+
+## Rules
+
+- **The maintainer makes every commit.** Never run `git add`, `git commit` or `git push`. End each task by listing the changed files and proposing a conventional commit message (`feat|fix|test|build|docs|chore: …`).
+- **This repo is public.** Never write the names of companies, customers or vendors from the maintainer's other work into it — not in code, tests, docs or commit messages. Examples and tests use `*.example`, `*.invalid` and `127.0.0.1` hosts only.
+- **Zero runtime dependencies.** Dev dependencies are pinned to exact versions. Shared tooling goes in the root (`pnpm add -D -E -w …`); tools only one package uses go in that package (`pnpm -C packages/thoro-ui add -D -E …`). Use pnpm, never npm or yarn.
+- **Everything in `packages/thoro-ui/src/` must run under the strictest CSP** (canary spec §8): constructed stylesheets only, DOM built with `createElement`/`createElementNS`/`textContent`, no `innerHTML`, no `eval`/`new Function`/string timers, no network requests other than configured probes.
+- **Nothing touches `window`, `document` or `customElements` at import time.**
+- **Collection names** (collection spec §2): tags `thoro-<name>`, events `<name>-<action>`, storage keys `thoro-ui:<name>:<what>`, theme variables `--thoro-*`.
+- **Each component has its own size budget**, set in its spec and enforced by `pnpm size`. Don't raise one without the maintainer's agreement; trim first. Canary: core ≤ 2 KB, element ≤ 4 KB gzip.
+- **Publishing to npm is the maintainer's step.** Never run `npm publish` / `pnpm publish`.
+
+## Commands
+
+Run from the repo root. Available once the plan's Tasks 1, 2 and 8 have added them:
+
+| command             | does                                                    |
+| ------------------- | ------------------------------------------------------- |
+| `pnpm lint`         | `vp lint` — oxlint, with type-aware rules               |
+| `pnpm format`       | `vp fmt` — oxfmt, writes                                |
+| `pnpm format:check` | `vp fmt --check` — oxfmt, check only                    |
+| `pnpm typecheck`    | `tsc -p .` in every package (`vp run -r typecheck`)     |
+| `pnpm test`         | `vp test` — Vitest unit tests (happy-dom)               |
+| `pnpm build`        | `vp pack` — tsdown → `packages/thoro-ui/dist/`          |
+| `pnpm size`         | size-limit against the budgets (run after `build`)      |
+| `pnpm test:ssr`     | imports `dist/` in plain Node (run after `build`)       |
+| `pnpm test:browser` | builds, then Playwright in Chromium, Firefox and WebKit |
+
+To pass arguments — one test file, one browser — run the package script directly: `pnpm -C packages/thoro-ui test test/unit/res-canary/origins.test.ts`, `pnpm -C packages/thoro-ui test:browser --project=webkit`.
+
+First-time browser setup: `pnpm -C packages/thoro-ui exec playwright install chromium firefox webkit`.
+
+Tooling is Vite+ (`vite-plus`): the root `vite.config.ts` holds the `fmt` and `lint` blocks, and `packages/thoro-ui/vite.config.ts` holds `test` and `pack`. Don't add `oxlint`, `oxfmt`, `vitest` or `tsdown` as dependencies or give them their own config files. Import test helpers from `vite-plus/test`, not `vitest`. `vp check` runs format and lint in one pass, but it is not the type check: it misses `isolatedDeclarations` errors that `pnpm typecheck` reports.
+
+## Environment notes
+
+Verified on 2026-09-29 in a throwaway check before the first plan was written; the Vite+ switch on 2026-09-30; the workspace layout on 2026-10-01.
+
+- **Node:** 24 locally and in CI (`.node-version`). Vite+ supports `^24.11 || >=26`, so Node 25 is out of range. Node runs `.ts` scripts natively (the Playwright fixture server, the server-import check): value imports need explicit extensions, and only erasable TypeScript syntax works (no `enum`, `namespace` or parameter properties).
+- **Workspace:** package scripts find `vp` and `tsc` from the root install, and a package's `vite.config.ts` can import `vite-plus` from it. Vite+ does not cache `package.json` scripts run through `vp run`, so results are never replayed.
+- **TypeScript 7.0.2** is the native compiler and has no JS API. `.d.ts` files come from tsdown 0.23.0 through `isolatedDeclarations`. Consequences: every exported function and constant needs an explicit type, and `export default defineConfig(…)` fails under that flag, which is why config files are left out of the tsconfigs.
+- **happy-dom 20.14.5:**
+  - refuses to load `<script src>` ("JavaScript file loading is disabled") — unit tests use `<img>` for element failures; real script loading is covered by Playwright;
+  - never fires `load`/`error` for preload links or images by itself — tests dispatch those events by hand, which keeps them deterministic;
+  - supports constructed stylesheets and `adoptedStyleSheets`, upgrading an element whose properties were set before definition, `addEventListener`'s `signal` option, `Intl.ListFormat`, and `navigator.clipboard` (spy on `writeText`);
+  - a synthetic `securitypolicyviolation` works as `new Event(…)` plus `Object.assign` for `blockedURI`, `originalPolicy`, `disposition` and `effectiveDirective`.
+- **Playwright on strict-CSP pages:** the plan uses only `page.goto`, `page.evaluate` and `expect.poll`, and avoids `page.waitForFunction` as a precaution. If a strict-page test reports a `script-src`/`trusted-types` violation with `blockedURI` `eval`, suspect the test tooling before the package.
+- **Playwright Firefox inside an agent sandbox (macOS):** Firefox exits at launch with "Could not find profile folder". It reads `~/Library/Application Support/Firefox` at startup even when given its own profile, and the Claude Code sandbox blocks that folder along with other browser profile folders. Chromium and WebKit are unaffected. Run `pnpm -C packages/thoro-ui test:browser --project=firefox` from a normal terminal, or rely on CI. Don't widen the sandbox to that folder: it holds the user's real browser profile.
+- **GitHub Actions** current majors at planning time: `actions/checkout@v7`, `actions/setup-node@v7`, `pnpm/action-setup@v6`.
+
+## Code style
+
+- oxfmt: no semicolons, single quotes, 120 columns, trailing commas, `arrowParens: 'avoid'`.
+- kebab-case file names; relative imports with explicit `.ts` extensions.
+- Comments explain why, not what.
+- Tests pin behaviour (state changes, derived text, events, error paths), not the mere presence of an element. Vitest globals are on — don't import `describe`, `it`, `expect` or `vi`.
+````
+
+- [ ] **Step 7: Install**
+
+Run: `pnpm install`
+Expected: exit 0; `pnpm-lock.yaml` now has two importers, `.` (`@types/node`, `typescript`, `vite-plus`) and `packages/thoro-ui` (`@playwright/test`). The one peer warning (Vitest wants `vite ^8`; Vite+ supplies its core package, which bundles vite 8.3.1) is expected.
+
+- [ ] **Step 8: Prove the package resolves the root tooling**
+
+Run: `pnpm -C packages/thoro-ui exec vp test --passWithNoTests`
+Expected: exit 0 with "No test files found" — the package's `vite.config.ts` loaded `vite-plus` from the root install, and `vp` resolved from the package.
+
+Run: `pnpm typecheck`
+Expected: exit 0; the output shows `tsc -p .` running in `packages/thoro-ui`.
+
+- [ ] **Step 9: Re-run the stylesheet check**
+
+Run: `pnpm -C packages/thoro-ui test:browser --project=chromium --project=webkit`
+Expected: `2 passed`.
+
+Firefox can't launch inside an agent sandbox (see AGENTS.md). Ask the maintainer to run this from a normal terminal and report the result:
+
+Run: `pnpm -C packages/thoro-ui test:browser --project=firefox`
+Expected: `1 passed`.
+
+**If any engine fails because of the stylesheet** (a `style-src` entry in `violations`, or padding other than `17px`), stop and report the engine and its output to the maintainer. The fallback (a `nonce` property applied to a `<style>` element, canary spec §8) changes the element's design and needs their approval before Task 6.
+
+- [ ] **Step 10: Format, lint, type-check**
 
 Run: `pnpm format && pnpm format:check && pnpm lint && pnpm typecheck`
-Expected: all exit 0. `pnpm format` may reformat the Markdown docs; that is expected.
+Expected: all exit 0.
 
-- [ ] **Step 9: Hand off for commit**
+- [ ] **Step 11: Hand off for commit**
 
-Tell the maintainer the changed files and propose: `chore: scaffold tooling and verify constructed stylesheets under strict CSP`. Do not run git.
+Tell the maintainer the changed files and propose: `build: restructure into a pnpm workspace with the thoro-ui package`. Do not run git.
 
 ---
 
@@ -444,45 +404,44 @@ Tell the maintainer the changed files and propose: `chore: scaffold tooling and 
 
 **Files:**
 
-- Create: `vitest.config.ts`, `src/origins.ts`
-- Modify: `package.json` (add `test` script), `tsconfig.json` (`types`)
-- Test: `test/unit/origins.test.ts`
+- Create: `packages/thoro-ui/src/res-canary/origins.ts`
+- Modify: `packages/thoro-ui/vite.config.ts` (`test` block), `packages/thoro-ui/tsconfig.json` (`types`), `packages/thoro-ui/package.json` and root `package.json` (`test` script)
+- Test: `packages/thoro-ui/test/unit/res-canary/origins.test.ts`
 
 **Interfaces:**
 
 - Consumes: nothing.
 - Produces: `type OriginPattern = { host: string; port: string; scheme: string; wildcard: boolean }`, `parseOriginPattern(origin: string): OriginPattern` (throws `TypeError` whose message contains `invalid origin`), `matchesOrigin(url: string, pattern: OriginPattern): boolean` (never throws).
 
-- [ ] **Step 1: Install Vitest and configure it**
+- [ ] **Step 1: Install happy-dom and finish the test config**
 
-Run: `pnpm add -D -E vitest@5.0.2 happy-dom@20.14.5`
+Vitest comes with Vite+; only the DOM environment is installed. It goes in the package, because only the package's tests use it.
 
-`vitest.config.ts`:
+Run: `pnpm -C packages/thoro-ui add -D -E happy-dom@20.14.5`
+
+Replace the `test` block in `packages/thoro-ui/vite.config.ts` with:
 
 ```ts
-import { defineConfig } from 'vitest/config'
-
-export default defineConfig({
   test: {
     environment: 'happy-dom',
     globals: true,
+    // Vitest's default pattern would also pick up the Playwright specs in test/browser.
     include: ['test/unit/**/*.test.ts'],
     restoreMocks: true,
     unstubGlobals: true,
   },
-})
 ```
 
-In `tsconfig.json`, change `"types": ["node"]` to `"types": ["node", "vitest/globals"]`.
+In `packages/thoro-ui/tsconfig.json`, change `"types": ["node"]` to `"types": ["node", "vite-plus/test/globals"]`.
 
-In `package.json` `scripts`, add `"test": "vitest run"`.
+Add the scripts: `"test": "vp test"` in `packages/thoro-ui/package.json`, and `"test": "vp run -r test"` in the root `package.json`. (`vp test` runs once and exits; `vp test watch` is the watch mode.)
 
 - [ ] **Step 2: Write the failing test**
 
-`test/unit/origins.test.ts`:
+`packages/thoro-ui/test/unit/res-canary/origins.test.ts`:
 
 ```ts
-import { matchesOrigin, parseOriginPattern } from '../../src/origins.ts'
+import { matchesOrigin, parseOriginPattern } from '../../../src/res-canary/origins.ts'
 
 const matches = (url: string, origin: string): boolean => matchesOrigin(url, parseOriginPattern(origin))
 
@@ -549,10 +508,10 @@ describe('matchesOrigin', () => {
 
 - [ ] **Step 3: Run it to verify it fails**
 
-Run: `pnpm test test/unit/origins.test.ts`
-Expected: FAIL — cannot resolve `../../src/origins.ts`.
+Run: `pnpm -C packages/thoro-ui test test/unit/res-canary/origins.test.ts`
+Expected: FAIL — cannot resolve `../../../src/res-canary/origins.ts`.
 
-- [ ] **Step 4: Implement `src/origins.ts`**
+- [ ] **Step 4: Implement `packages/thoro-ui/src/res-canary/origins.ts`**
 
 ```ts
 export type OriginPattern = {
@@ -570,7 +529,7 @@ export function parseOriginPattern(origin: string): OriginPattern {
   const match = ORIGIN.exec(origin)
   if (!match) {
     throw new TypeError(
-      `web-res-canary: invalid origin "${origin}". Use scheme://host[:port] with no path, e.g. "https://*.vendor.example".`,
+      `res-canary: invalid origin "${origin}". Use scheme://host[:port] with no path, e.g. "https://*.vendor.example".`,
     )
   }
   const scheme = match[1].toLowerCase()
@@ -600,7 +559,7 @@ export function matchesOrigin(url: string, pattern: OriginPattern): boolean {
 
 - [ ] **Step 5: Run it to verify it passes**
 
-Run: `pnpm test test/unit/origins.test.ts`
+Run: `pnpm -C packages/thoro-ui test test/unit/res-canary/origins.test.ts`
 Expected: PASS (all tests).
 
 - [ ] **Step 6: Lint, format, type-check**
@@ -618,21 +577,21 @@ Propose: `feat: parse and match CSP host-source origins`. Do not run git.
 
 **Files:**
 
-- Create: `src/types.ts`, `src/status.ts`, `src/dismissal.ts`
-- Test: `test/unit/status.test.ts`, `test/unit/dismissal.test.ts`
+- Create: `packages/thoro-ui/src/res-canary/types.ts`, `packages/thoro-ui/src/res-canary/status.ts`, `packages/thoro-ui/src/res-canary/dismissal.ts`
+- Test: `packages/thoro-ui/test/unit/res-canary/status.test.ts`, `packages/thoro-ui/test/unit/res-canary/dismissal.test.ts`
 
 **Interfaces:**
 
 - Consumes: nothing.
 - Produces:
-  - `src/types.ts`: `Status`, `BlockedReason`, `Probe`, `Feature`, `BlockedFeature`, `OwnPolicyViolation`, `Snapshot`, `CanaryStorage`, `CanaryOptions`, `Canary` (exact shapes below).
+  - `packages/thoro-ui/src/res-canary/types.ts`: `Status`, `BlockedReason`, `Probe`, `Feature`, `BlockedFeature`, `OwnPolicyViolation`, `Snapshot`, `CanaryStorage`, `CanaryOptions`, `Canary` (exact shapes below).
   - `raiseStatus(current: Status, next: Status): Status`
   - `blockedFeatures(features: readonly Feature[], statuses: Readonly<Record<string, Status>>): BlockedFeature[]`
   - `signatureOf(blocked: readonly BlockedFeature[]): string`
   - `type DismissalStore = { read(): string | null; write(signature: string): void }`
   - `createDismissalStore(option: CanaryStorage | null | undefined, key: string): DismissalStore`
 
-- [ ] **Step 1: Create `src/types.ts`**
+- [ ] **Step 1: Create `packages/thoro-ui/src/res-canary/types.ts`**
 
 ```ts
 export type Status = 'unknown' | 'ok' | 'load-failed' | 'foreign-csp' | 'own-csp'
@@ -681,7 +640,7 @@ export type CanaryOptions = {
   onOwnPolicyViolation?: (violation: OwnPolicyViolation) => void
   /** Default: localStorage. null keeps dismissal in memory for this page only. */
   storage?: CanaryStorage | null
-  /** Default: 'web-res-canary:dismissed'. */
+  /** Default: 'thoro-ui:res-canary:dismissed'. */
   storageKey?: string
   /** Default: 15000. 0 disables the timeout. */
   probeTimeoutMs?: number
@@ -699,11 +658,11 @@ export type Canary = {
 
 - [ ] **Step 2: Write the failing tests**
 
-`test/unit/status.test.ts`:
+`packages/thoro-ui/test/unit/res-canary/status.test.ts`:
 
 ```ts
-import { blockedFeatures, raiseStatus, signatureOf } from '../../src/status.ts'
-import type { BlockedFeature, Feature, Status } from '../../src/types.ts'
+import { blockedFeatures, raiseStatus, signatureOf } from '../../../src/res-canary/status.ts'
+import type { BlockedFeature, Feature, Status } from '../../../src/res-canary/types.ts'
 
 const feature = (id: string): Feature => ({
   id,
@@ -747,11 +706,11 @@ describe('signatureOf', () => {
 })
 ```
 
-`test/unit/dismissal.test.ts`:
+`packages/thoro-ui/test/unit/res-canary/dismissal.test.ts`:
 
 ```ts
-import { createDismissalStore } from '../../src/dismissal.ts'
-import type { CanaryStorage } from '../../src/types.ts'
+import { createDismissalStore } from '../../../src/res-canary/dismissal.ts'
+import type { CanaryStorage } from '../../../src/res-canary/types.ts'
 
 function mapStorage(): CanaryStorage {
   const data = new Map<string, string>()
@@ -812,10 +771,10 @@ describe('createDismissalStore', () => {
 
 - [ ] **Step 3: Run them to verify they fail**
 
-Run: `pnpm test test/unit/status.test.ts test/unit/dismissal.test.ts`
-Expected: FAIL — cannot resolve `../../src/status.ts` / `../../src/dismissal.ts`.
+Run: `pnpm -C packages/thoro-ui test test/unit/res-canary/status.test.ts test/unit/res-canary/dismissal.test.ts`
+Expected: FAIL — cannot resolve `../../../src/res-canary/status.ts` / `../../../src/res-canary/dismissal.ts`.
 
-- [ ] **Step 4: Implement `src/status.ts`**
+- [ ] **Step 4: Implement `packages/thoro-ui/src/res-canary/status.ts`**
 
 ```ts
 import type { BlockedFeature, Feature, Status } from './types.ts'
@@ -850,7 +809,7 @@ export function signatureOf(blocked: readonly BlockedFeature[]): string {
 }
 ```
 
-- [ ] **Step 5: Implement `src/dismissal.ts`**
+- [ ] **Step 5: Implement `packages/thoro-ui/src/res-canary/dismissal.ts`**
 
 ```ts
 import type { CanaryStorage } from './types.ts'
@@ -917,8 +876,8 @@ Propose: `feat: add public types, status precedence and dismissal storage`. Do n
 
 **Files:**
 
-- Create: `src/canary.ts`, `src/index.ts`
-- Test: `test/unit/canary.test.ts`
+- Create: `packages/thoro-ui/src/res-canary/canary.ts`, `packages/thoro-ui/src/res-canary/index.ts`
+- Test: `packages/thoro-ui/test/unit/res-canary/canary.test.ts`
 
 **Interfaces:**
 
@@ -927,11 +886,11 @@ Propose: `feat: add public types, status precedence and dismissal storage`. Do n
 
 - [ ] **Step 1: Write the failing test**
 
-`test/unit/canary.test.ts`:
+`packages/thoro-ui/test/unit/res-canary/canary.test.ts`:
 
 ```ts
-import { createCanary } from '../../src/canary.ts'
-import type { Canary, CanaryOptions, CanaryStorage, Feature } from '../../src/types.ts'
+import { createCanary } from '../../../src/res-canary/canary.ts'
+import type { Canary, CanaryOptions, CanaryStorage, Feature } from '../../../src/res-canary/types.ts'
 
 const OWN = "default-src 'self'; connect-src https://api.own.example"
 const FOREIGN = "script-src-elem 'self'"
@@ -1089,7 +1048,7 @@ describe('createCanary', () => {
     failImage('https://widget.chat.example/a.png')
     first.dismiss()
     first.stop()
-    expect(data.get('web-res-canary:dismissed')).toBe('chat')
+    expect(data.get('thoro-ui:res-canary:dismissed')).toBe('chat')
 
     const second = setup({ storage })
     failImage('https://widget.chat.example/a.png')
@@ -1172,10 +1131,10 @@ describe('createCanary', () => {
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run: `pnpm test test/unit/canary.test.ts`
-Expected: FAIL — cannot resolve `../../src/canary.ts`.
+Run: `pnpm -C packages/thoro-ui test test/unit/res-canary/canary.test.ts`
+Expected: FAIL — cannot resolve `../../../src/res-canary/canary.ts`.
 
-- [ ] **Step 3: Implement `src/canary.ts`**
+- [ ] **Step 3: Implement `packages/thoro-ui/src/res-canary/canary.ts`**
 
 ```ts
 import { createDismissalStore } from './dismissal.ts'
@@ -1188,7 +1147,7 @@ type Compiled = { feature: Feature; patterns: OriginPattern[] }
 export function createCanary(options: CanaryOptions): Canary {
   const compiled = compile(options.features)
   const isOwnPolicy = toPolicyMatcher(options.ownPolicy)
-  const dismissal = createDismissalStore(options.storage, options.storageKey ?? 'web-res-canary:dismissed')
+  const dismissal = createDismissalStore(options.storage, options.storageKey ?? 'thoro-ui:res-canary:dismissed')
   const listeners = new Set<() => void>()
   let statuses: Readonly<Record<string, Status>> = Object.fromEntries(
     compiled.map(({ feature }): [string, Status] => [feature.id, 'unknown']),
@@ -1268,7 +1227,7 @@ export function createCanary(options: CanaryOptions): Canary {
     },
     report(id) {
       if (!Object.hasOwn(statuses, id)) {
-        console.warn(`web-res-canary: report() was called with unknown feature id "${id}"`)
+        console.warn(`res-canary: report() was called with unknown feature id "${id}"`)
         return
       }
       setStatus(id, 'load-failed')
@@ -1293,9 +1252,9 @@ export function createCanary(options: CanaryOptions): Canary {
 function compile(features: readonly Feature[]): Compiled[] {
   const ids = new Set<string>()
   return features.map(feature => {
-    if (ids.has(feature.id)) throw new TypeError(`web-res-canary: duplicate feature id "${feature.id}"`)
+    if (ids.has(feature.id)) throw new TypeError(`res-canary: duplicate feature id "${feature.id}"`)
     ids.add(feature.id)
-    if (feature.origins.length === 0) throw new TypeError(`web-res-canary: feature "${feature.id}" has no origins`)
+    if (feature.origins.length === 0) throw new TypeError(`res-canary: feature "${feature.id}" has no origins`)
     return { feature, patterns: feature.origins.map(origin => parseOriginPattern(origin)) }
   })
 }
@@ -1303,7 +1262,7 @@ function compile(features: readonly Feature[]): Compiled[] {
 function toPolicyMatcher(ownPolicy: CanaryOptions['ownPolicy']): (policy: string) => boolean {
   if (typeof ownPolicy === 'string') {
     // An empty string is contained in every policy, which would silently classify every block as ours.
-    if (ownPolicy.trim() === '') throw new TypeError('web-res-canary: ownPolicy must not be an empty string')
+    if (ownPolicy.trim() === '') throw new TypeError('res-canary: ownPolicy must not be an empty string')
     return policy => policy.includes(ownPolicy)
   }
   if (ownPolicy instanceof RegExp) {
@@ -1314,9 +1273,7 @@ function toPolicyMatcher(ownPolicy: CanaryOptions['ownPolicy']): (policy: string
     }
   }
   if (typeof ownPolicy === 'function') return ownPolicy
-  throw new TypeError(
-    'web-res-canary: ownPolicy is required (a string, RegExp or function that recognises your own CSP)',
-  )
+  throw new TypeError('res-canary: ownPolicy is required (a string, RegExp or function that recognises your own CSP)')
 }
 
 function resourceUrl(element: Element): string {
@@ -1329,7 +1286,7 @@ function resourceUrl(element: Element): string {
 }
 ```
 
-- [ ] **Step 4: Create `src/index.ts`**
+- [ ] **Step 4: Create `packages/thoro-ui/src/res-canary/index.ts`**
 
 ```ts
 export { createCanary } from './canary.ts'
@@ -1367,9 +1324,9 @@ Propose: `feat: detect CSP violations and failed resource loads`. Do not run git
 
 **Files:**
 
-- Create: `src/probes.ts`
-- Modify: `src/canary.ts` (the `compile` function and the `start()` method)
-- Test: `test/unit/probes.test.ts`; add a `describe('probes')` block to `test/unit/canary.test.ts`
+- Create: `packages/thoro-ui/src/res-canary/probes.ts`
+- Modify: `packages/thoro-ui/src/res-canary/canary.ts` (the `compile` function and the `start()` method)
+- Test: `packages/thoro-ui/test/unit/res-canary/probes.test.ts`; add a `describe('probes')` block to `packages/thoro-ui/test/unit/res-canary/canary.test.ts`
 
 **Interfaces:**
 
@@ -1378,10 +1335,10 @@ Propose: `feat: detect CSP violations and failed resource loads`. Do not run git
 
 - [ ] **Step 1: Write the failing probe tests**
 
-`test/unit/probes.test.ts`:
+`packages/thoro-ui/test/unit/res-canary/probes.test.ts`:
 
 ```ts
-import { runProbe } from '../../src/probes.ts'
+import { runProbe } from '../../../src/res-canary/probes.ts'
 
 const signal = new AbortController().signal
 
@@ -1481,7 +1438,7 @@ describe('runProbe', () => {
 })
 ```
 
-- [ ] **Step 2: Add the integration tests to `test/unit/canary.test.ts`**
+- [ ] **Step 2: Add the integration tests to `packages/thoro-ui/test/unit/res-canary/canary.test.ts`**
 
 Append at the end of the file:
 
@@ -1546,10 +1503,10 @@ describe('probes', () => {
 
 - [ ] **Step 3: Run the tests to verify they fail**
 
-Run: `pnpm test test/unit/probes.test.ts test/unit/canary.test.ts`
-Expected: FAIL — `probes.test.ts` cannot resolve `../../src/probes.ts`; in `canary.test.ts` the `probes` block fails (statuses stay `unknown`; no validation error thrown).
+Run: `pnpm -C packages/thoro-ui test test/unit/res-canary/probes.test.ts test/unit/res-canary/canary.test.ts`
+Expected: FAIL — `probes.test.ts` cannot resolve `../../../src/res-canary/probes.ts`; in `canary.test.ts` the `probes` block fails (statuses stay `unknown`; no validation error thrown).
 
-- [ ] **Step 4: Implement `src/probes.ts`**
+- [ ] **Step 4: Implement `packages/thoro-ui/src/res-canary/probes.ts`**
 
 ```ts
 import type { Probe } from './types.ts'
@@ -1620,7 +1577,7 @@ function loadImage(url: string): Promise<boolean> {
 }
 ```
 
-- [ ] **Step 5: Wire probes into `src/canary.ts`**
+- [ ] **Step 5: Wire probes into `packages/thoro-ui/src/res-canary/canary.ts`**
 
 Add the import next to the others:
 
@@ -1654,14 +1611,14 @@ Replace the whole `compile` function with:
 function compile(features: readonly Feature[]): Compiled[] {
   const ids = new Set<string>()
   return features.map(feature => {
-    if (ids.has(feature.id)) throw new TypeError(`web-res-canary: duplicate feature id "${feature.id}"`)
+    if (ids.has(feature.id)) throw new TypeError(`res-canary: duplicate feature id "${feature.id}"`)
     ids.add(feature.id)
-    if (feature.origins.length === 0) throw new TypeError(`web-res-canary: feature "${feature.id}" has no origins`)
+    if (feature.origins.length === 0) throw new TypeError(`res-canary: feature "${feature.id}" has no origins`)
     const patterns = feature.origins.map(origin => parseOriginPattern(origin))
     const { probe } = feature
     if (probe && probe.type !== 'custom' && !patterns.some(pattern => matchesOrigin(probe.url, pattern))) {
       throw new TypeError(
-        `web-res-canary: feature "${feature.id}" probes ${probe.url}, which is outside its origins, so the IT list would miss it`,
+        `res-canary: feature "${feature.id}" probes ${probe.url}, which is outside its origins, so the IT list would miss it`,
       )
     }
     return { feature, patterns }
@@ -1689,8 +1646,8 @@ Propose: `feat: run startup probes with a timeout`. Do not run git.
 
 **Files:**
 
-- Create: `src/ui/strings.ts`, `src/ui/styles.ts`, `src/ui/render.ts`
-- Test: `test/unit/render.test.ts`, `test/unit/strings.test.ts`
+- Create: `packages/thoro-ui/src/res-canary/ui/strings.ts`, `packages/thoro-ui/src/res-canary/ui/styles.ts`, `packages/thoro-ui/src/res-canary/ui/render.ts`
+- Test: `packages/thoro-ui/test/unit/res-canary/render.test.ts`, `packages/thoro-ui/test/unit/res-canary/strings.test.ts`
 
 **Interfaces:**
 
@@ -1704,10 +1661,10 @@ Propose: `feat: run startup probes with a timeout`. Do not run git.
 
 - [ ] **Step 1: Write the failing tests**
 
-`test/unit/strings.test.ts`:
+`packages/thoro-ui/test/unit/res-canary/strings.test.ts`:
 
 ```ts
-import { DEFAULT_STRINGS, resolveStrings } from '../../src/ui/strings.ts'
+import { DEFAULT_STRINGS, resolveStrings } from '../../../src/res-canary/ui/strings.ts'
 
 describe('resolveStrings', () => {
   it('overlays the given strings on the defaults', () => {
@@ -1722,12 +1679,12 @@ describe('resolveStrings', () => {
 })
 ```
 
-`test/unit/render.test.ts`:
+`packages/thoro-ui/test/unit/res-canary/render.test.ts`:
 
 ```ts
-import type { BlockedFeature } from '../../src/types.ts'
-import { originsText, renderCanary, summaryText } from '../../src/ui/render.ts'
-import { DEFAULT_STRINGS } from '../../src/ui/strings.ts'
+import type { BlockedFeature } from '../../../src/res-canary/types.ts'
+import { originsText, renderCanary, summaryText } from '../../../src/res-canary/ui/render.ts'
+import { DEFAULT_STRINGS } from '../../../src/res-canary/ui/strings.ts'
 
 const chat: BlockedFeature = {
   id: 'chat',
@@ -1823,10 +1780,10 @@ describe('renderCanary', () => {
 
 - [ ] **Step 2: Run them to verify they fail**
 
-Run: `pnpm test test/unit/strings.test.ts test/unit/render.test.ts`
-Expected: FAIL — cannot resolve `../../src/ui/strings.ts` / `../../src/ui/render.ts`.
+Run: `pnpm -C packages/thoro-ui test test/unit/res-canary/strings.test.ts test/unit/res-canary/render.test.ts`
+Expected: FAIL — cannot resolve `../../../src/res-canary/ui/strings.ts` / `../../../src/res-canary/ui/render.ts`.
 
-- [ ] **Step 3: Implement `src/ui/strings.ts`**
+- [ ] **Step 3: Implement `packages/thoro-ui/src/res-canary/ui/strings.ts`**
 
 ```ts
 export type CanaryStrings = {
@@ -1860,17 +1817,17 @@ export function resolveStrings(overrides: Partial<CanaryStrings> | null | undefi
 }
 ```
 
-- [ ] **Step 4: Implement `src/ui/styles.ts`**
+- [ ] **Step 4: Implement `packages/thoro-ui/src/res-canary/ui/styles.ts`**
 
 ```ts
 const CSS = `
 :host {
-  --_bg: var(--wrc-bg, #fffbeb);
-  --_fg: var(--wrc-fg, #422006);
-  --_border: var(--wrc-border, #f59e0b);
-  --_accent: var(--wrc-accent, #b45309);
+  --_bg: var(--thoro-bg, #fffbeb);
+  --_fg: var(--thoro-fg, #422006);
+  --_border: var(--thoro-border, #f59e0b);
+  --_accent: var(--thoro-accent, #b45309);
   display: block;
-  font-family: var(--wrc-font, system-ui, sans-serif);
+  font-family: var(--thoro-font, system-ui, sans-serif);
   font-size: 14px;
   line-height: 1.45;
 }
@@ -1879,10 +1836,10 @@ const CSS = `
 }
 @media (prefers-color-scheme: dark) {
   :host {
-    --_bg: var(--wrc-bg, #2b1d0e);
-    --_fg: var(--wrc-fg, #fdecc8);
-    --_border: var(--wrc-border, #b45309);
-    --_accent: var(--wrc-accent, #f59e0b);
+    --_bg: var(--thoro-bg, #2b1d0e);
+    --_fg: var(--thoro-fg, #fdecc8);
+    --_border: var(--thoro-border, #b45309);
+    --_accent: var(--thoro-accent, #f59e0b);
   }
 }
 .root {
@@ -1895,7 +1852,7 @@ const CSS = `
   color: var(--_fg);
   background: var(--_bg);
   border: 1px solid var(--_border);
-  border-radius: var(--wrc-radius, 8px);
+  border-radius: var(--thoro-radius, 8px);
 }
 :host([variant='banner']) .root {
   border-width: 0 0 1px;
@@ -1983,7 +1940,7 @@ export function canarySheet(): CSSStyleSheet {
 }
 ```
 
-- [ ] **Step 5: Implement `src/ui/render.ts`**
+- [ ] **Step 5: Implement `packages/thoro-ui/src/res-canary/ui/render.ts`**
 
 ```ts
 import type { BlockedFeature } from '../types.ts'
@@ -2105,28 +2062,28 @@ Propose: `feat: render the canary banner DOM`. Do not run git.
 
 ---
 
-### Task 7: The `<web-res-canary>` custom element
+### Task 7: The `<thoro-res-canary>` custom element
 
 **Files:**
 
-- Create: `src/ui/element.ts`, `src/element.ts`
-- Test: `test/unit/element.test.ts`
+- Create: `packages/thoro-ui/src/res-canary/ui/element.ts`, `packages/thoro-ui/src/res-canary/element.ts`
+- Test: `packages/thoro-ui/test/unit/res-canary/element.test.ts`
 
 **Interfaces:**
 
 - Consumes: `Canary`, `BlockedFeature` (Task 3); `createCanary` (Task 4, tests only); `renderCanary`, `originsText`, `RenderedCanary`, `resolveStrings`, `CanaryStrings`, `canarySheet` (Task 6).
-- Produces: `interface WebResCanaryElement extends HTMLElement { canary: Canary | undefined; items: readonly BlockedFeature[] | undefined; strings: Partial<CanaryStrings>; variant: CanaryVariant }`, `type CanaryVariant = 'banner' | 'inline'`, `type CanaryDismissDetail = { ids: string[] }`, `type CanaryCopyDetail = { copied: boolean; text: string }`, `defineCanaryElement(tagName?: string): void`, `mountBanner(canary: Canary): WebResCanaryElement`; global `HTMLElementTagNameMap['web-res-canary']` and `HTMLElementEventMap` entries for `canary-dismiss` / `canary-copy`.
+- Produces: `interface ResCanaryElement extends HTMLElement { canary: Canary | undefined; items: readonly BlockedFeature[] | undefined; strings: Partial<CanaryStrings>; variant: CanaryVariant }`, `type CanaryVariant = 'banner' | 'inline'`, `type CanaryDismissDetail = { ids: string[] }`, `type CanaryCopyDetail = { copied: boolean; text: string }`, `defineResCanaryElement(tagName?: string): void`, `mountBanner(canary: Canary): ResCanaryElement`; global `HTMLElementTagNameMap['thoro-res-canary']` and `HTMLElementEventMap` entries for `res-canary-dismiss` / `res-canary-copy`.
 
 - [ ] **Step 1: Write the failing test**
 
-`test/unit/element.test.ts`:
+`packages/thoro-ui/test/unit/res-canary/element.test.ts`:
 
 ```ts
-import { createCanary } from '../../src/canary.ts'
-import type { BlockedFeature, Canary, Feature } from '../../src/types.ts'
-import { defineCanaryElement, mountBanner, type WebResCanaryElement } from '../../src/ui/element.ts'
+import { createCanary } from '../../../src/res-canary/canary.ts'
+import type { BlockedFeature, Canary, Feature } from '../../../src/res-canary/types.ts'
+import { defineResCanaryElement, mountBanner, type ResCanaryElement } from '../../../src/res-canary/ui/element.ts'
 
-defineCanaryElement()
+defineResCanaryElement()
 
 const chat: Feature = {
   id: 'chat',
@@ -2147,11 +2104,8 @@ function canaryWith(...blocked: string[]): Canary {
   return canary
 }
 
-function mount(
-  setup: (element: WebResCanaryElement) => void,
-  parent: HTMLElement = document.body,
-): WebResCanaryElement {
-  const element = document.createElement('web-res-canary')
+function mount(setup: (element: ResCanaryElement) => void, parent: HTMLElement = document.body): ResCanaryElement {
+  const element = document.createElement('thoro-res-canary')
   setup(element)
   parent.append(element)
   return element
@@ -2163,7 +2117,7 @@ function part<T extends Element = HTMLElement>(element: HTMLElement, name: strin
 
 afterEach(() => document.body.replaceChildren())
 
-describe('<web-res-canary>', () => {
+describe('<thoro-res-canary>', () => {
   it('stays hidden and empty until the canary has something blocked', () => {
     const canary = canaryWith()
     const element = mount(el => {
@@ -2182,7 +2136,7 @@ describe('<web-res-canary>', () => {
       el.canary = canary
     })
     const onDismiss = vi.fn()
-    element.addEventListener('canary-dismiss', event => onDismiss(event.detail))
+    element.addEventListener('res-canary-dismiss', event => onDismiss(event.detail))
     part<HTMLButtonElement>(element, 'dismiss').click()
     expect(onDismiss).toHaveBeenCalledWith({ ids: ['chat'] })
     expect(canary.getSnapshot().dismissed).toBe(true)
@@ -2194,7 +2148,7 @@ describe('<web-res-canary>', () => {
     const element = mount(el => {
       el.canary = canary
     })
-    element.addEventListener('canary-dismiss', event => event.preventDefault())
+    element.addEventListener('res-canary-dismiss', event => event.preventDefault())
     part<HTMLButtonElement>(element, 'dismiss').click()
     expect(canary.getSnapshot().dismissed).toBe(false)
     expect(element.hidden).toBe(false)
@@ -2221,7 +2175,7 @@ describe('<web-res-canary>', () => {
       el.canary = canaryWith('chat', 'sign')
     })
     const onCopy = vi.fn()
-    element.addEventListener('canary-copy', event => onCopy(event.detail))
+    element.addEventListener('res-canary-copy', event => onCopy(event.detail))
     part<HTMLButtonElement>(element, 'copy').click()
     const text = 'https://*.sign.example\nhttps://widget.chat.example'
     await vi.waitFor(() => expect(onCopy).toHaveBeenCalledWith({ copied: true, text }))
@@ -2236,7 +2190,7 @@ describe('<web-res-canary>', () => {
       el.canary = canaryWith('chat')
     })
     const onCopy = vi.fn()
-    element.addEventListener('canary-copy', event => onCopy(event.detail))
+    element.addEventListener('res-canary-copy', event => onCopy(event.detail))
     part<HTMLButtonElement>(element, 'copy').click()
     await vi.waitFor(() => expect(onCopy).toHaveBeenCalledWith({ copied: false, text: 'https://widget.chat.example' }))
     expect(part(element, 'copy').textContent).toBe('Copy for IT')
@@ -2276,11 +2230,11 @@ describe('<web-res-canary>', () => {
   })
 
   it('picks up properties that were set before the element was defined', () => {
-    const early = document.createElement('late-canary') as WebResCanaryElement
+    const early = document.createElement('late-canary') as ResCanaryElement
     early.canary = canaryWith('chat')
     early.variant = 'banner'
     document.body.append(early)
-    defineCanaryElement('late-canary')
+    defineResCanaryElement('late-canary')
     expect(early.getAttribute('variant')).toBe('banner')
     expect(part(early, 'title').textContent).toBe("Some features couldn't load: Support chat.")
   })
@@ -2324,18 +2278,18 @@ describe('<web-res-canary>', () => {
     expect(element.hidden).toBe(false)
   })
 
-  it('defineCanaryElement ignores a tag that is already defined', () => {
-    expect(() => defineCanaryElement()).not.toThrow()
+  it('defineResCanaryElement ignores a tag that is already defined', () => {
+    expect(() => defineResCanaryElement()).not.toThrow()
   })
 })
 ```
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run: `pnpm test test/unit/element.test.ts`
-Expected: FAIL — cannot resolve `../../src/ui/element.ts`.
+Run: `pnpm -C packages/thoro-ui test test/unit/res-canary/element.test.ts`
+Expected: FAIL — cannot resolve `../../../src/res-canary/ui/element.ts`.
 
-- [ ] **Step 3: Implement `src/ui/element.ts`**
+- [ ] **Step 3: Implement `packages/thoro-ui/src/res-canary/ui/element.ts`**
 
 ```ts
 import type { BlockedFeature, Canary } from '../types.ts'
@@ -2349,7 +2303,7 @@ export type CanaryDismissDetail = { ids: string[] }
 
 export type CanaryCopyDetail = { copied: boolean; text: string }
 
-export interface WebResCanaryElement extends HTMLElement {
+export interface ResCanaryElement extends HTMLElement {
   /** Uncontrolled source: the element subscribes to it and dismisses through it. */
   canary: Canary | undefined
   /** Controlled source: when set, the element renders exactly these and ignores `canary`. */
@@ -2360,26 +2314,26 @@ export interface WebResCanaryElement extends HTMLElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'web-res-canary': WebResCanaryElement
+    'thoro-res-canary': ResCanaryElement
   }
   interface HTMLElementEventMap {
-    'canary-copy': CustomEvent<CanaryCopyDetail>
-    'canary-dismiss': CustomEvent<CanaryDismissDetail>
+    'res-canary-copy': CustomEvent<CanaryCopyDetail>
+    'res-canary-dismiss': CustomEvent<CanaryDismissDetail>
   }
 }
 
-const DEFAULT_TAG = 'web-res-canary'
+const DEFAULT_TAG = 'thoro-res-canary'
 const PROPERTIES = ['canary', 'items', 'strings', 'variant'] as const
 const NOTHING: readonly BlockedFeature[] = []
 
-export function defineCanaryElement(tagName: string = DEFAULT_TAG): void {
+export function defineResCanaryElement(tagName: string = DEFAULT_TAG): void {
   if (typeof customElements === 'undefined' || customElements.get(tagName)) return
   customElements.define(tagName, createElementClass())
 }
 
 /** Inserts an uncontrolled banner as the first element of <body> (after DOMContentLoaded if needed). */
-export function mountBanner(canary: Canary): WebResCanaryElement {
-  defineCanaryElement()
+export function mountBanner(canary: Canary): ResCanaryElement {
+  defineResCanaryElement()
   const element = document.createElement(DEFAULT_TAG)
   element.variant = 'banner'
   element.canary = canary
@@ -2390,7 +2344,7 @@ export function mountBanner(canary: Canary): WebResCanaryElement {
 
 // Built on demand so importing this module where HTMLElement doesn't exist (a server) is safe.
 function createElementClass(): CustomElementConstructor {
-  return class WebResCanary extends HTMLElement implements WebResCanaryElement {
+  return class ResCanary extends HTMLElement implements ResCanaryElement {
     readonly #root: ShadowRoot
     #canary: Canary | undefined
     #items: readonly BlockedFeature[] | undefined
@@ -2505,7 +2459,7 @@ function createElementClass(): CustomElementConstructor {
         selectContents(parts.origins)
       }
       this.dispatchEvent(
-        new CustomEvent<CanaryCopyDetail>('canary-copy', {
+        new CustomEvent<CanaryCopyDetail>('res-canary-copy', {
           bubbles: true,
           cancelable: true,
           composed: true,
@@ -2515,7 +2469,7 @@ function createElementClass(): CustomElementConstructor {
     }
 
     #dismiss(items: readonly BlockedFeature[]): void {
-      const event = new CustomEvent<CanaryDismissDetail>('canary-dismiss', {
+      const event = new CustomEvent<CanaryDismissDetail>('res-canary-dismiss', {
         bubbles: true,
         cancelable: true,
         composed: true,
@@ -2544,15 +2498,15 @@ function selectContents(node: Node): void {
 }
 ```
 
-- [ ] **Step 4: Create the element entry `src/element.ts`**
+- [ ] **Step 4: Create the element entry `packages/thoro-ui/src/res-canary/element.ts`**
 
 ```ts
-import { defineCanaryElement } from './ui/element.ts'
+import { defineResCanaryElement } from './ui/element.ts'
 
-defineCanaryElement()
+defineResCanaryElement()
 
-export { defineCanaryElement, mountBanner } from './ui/element.ts'
-export type { CanaryCopyDetail, CanaryDismissDetail, CanaryVariant, WebResCanaryElement } from './ui/element.ts'
+export { defineResCanaryElement, mountBanner } from './ui/element.ts'
+export type { CanaryCopyDetail, CanaryDismissDetail, CanaryVariant, ResCanaryElement } from './ui/element.ts'
 export { DEFAULT_STRINGS } from './ui/strings.ts'
 export type { CanaryStrings } from './ui/strings.ts'
 ```
@@ -2569,7 +2523,7 @@ Expected: all exit 0.
 
 - [ ] **Step 7: Hand off for commit**
 
-Propose: `feat: add the <web-res-canary> custom element`. Do not run git.
+Propose: `feat: add the <thoro-res-canary> custom element`. Do not run git.
 
 ---
 
@@ -2577,76 +2531,99 @@ Propose: `feat: add the <web-res-canary> custom element`. Do not run git.
 
 **Files:**
 
-- Create: `tsdown.config.ts`, `.size-limit.json`, `test/ssr.ts`
-- Modify: `package.json` (fields and scripts)
+- Create: `packages/thoro-ui/.size-limit.json`, `packages/thoro-ui/test/ssr.ts`, `packages/thoro-ui/LICENSE` (copy of the root one), `packages/thoro-ui/README.md` (stub; Task 10 writes it)
+- Modify: `packages/thoro-ui/vite.config.ts` (`pack` block), `packages/thoro-ui/package.json` (fields and scripts), root `package.json` (scripts)
 
 **Interfaces:**
 
-- Consumes: `src/index.ts`, `src/element.ts` (Tasks 4 and 7).
-- Produces: `dist/index.js`, `dist/index.d.ts`, `dist/element.js`, `dist/element.d.ts` (+ source maps) — Task 9's harness imports `/dist/index.js` and `/dist/element.js`.
+- Consumes: `packages/thoro-ui/src/res-canary/index.ts`, `packages/thoro-ui/src/res-canary/element.ts` (Tasks 4 and 7).
+- Produces: `packages/thoro-ui/dist/res-canary/index.js`, `index.d.ts`, `element.js`, `element.d.ts` (+ source maps) — Task 9's harness imports `/dist/res-canary/index.js` and `/dist/res-canary/element.js`. Package scripts `build`, `prepack`, `size`, `test:ssr`; root scripts `build`, `size`, `test:ssr`.
 
-- [ ] **Step 1: Install the build tools**
+- [ ] **Step 1: Install the size checker**
 
-Run: `pnpm add -D -E tsdown@0.23.0 size-limit@14.1.0 @size-limit/preset-small-lib@14.1.0`
+tsdown comes with Vite+ (`vp pack`); only size-limit is installed, in the package that it measures.
 
-- [ ] **Step 2: Create `tsdown.config.ts`**
+Run: `pnpm -C packages/thoro-ui add -D -E size-limit@14.1.0 @size-limit/preset-small-lib@14.1.0`
+
+- [ ] **Step 2: Add the `pack` block**
+
+In `packages/thoro-ui/vite.config.ts`, add next to the `test` block:
 
 ```ts
-import { defineConfig } from 'tsdown'
-
-export default defineConfig({
-  dts: true,
-  entry: ['src/index.ts', 'src/element.ts'],
-  format: 'esm',
-  platform: 'browser',
-  sourcemap: true,
-})
+  pack: {
+    dts: true,
+    // The keys set the output paths. A plain list would name files after their path below the common
+    // folder (src/res-canary/), giving dist/index.js instead of dist/res-canary/index.js.
+    entry: {
+      'res-canary/index': 'src/res-canary/index.ts',
+      'res-canary/element': 'src/res-canary/element.ts',
+    },
+    format: 'esm',
+    platform: 'browser',
+    sourcemap: true,
+  },
 ```
 
 (`.d.ts` files are generated through `isolatedDeclarations`, so TypeScript 7's missing JS API is not a problem.)
 
-- [ ] **Step 3: Add the package fields and scripts to `package.json`**
+- [ ] **Step 3: Add the package fields and scripts**
 
-Add these top-level fields (oxfmt's `sortPackageJson` orders them):
+Add these top-level fields to `packages/thoro-ui/package.json` (oxfmt's `sortPackageJson` orders them). There is no `"."` entry and no top-level `types`: every import names a component (collection spec §1).
 
 ```json
-  "sideEffects": ["./dist/element.js"],
+  "sideEffects": ["./dist/*/element.js"],
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+    "./res-canary": {
+      "types": "./dist/res-canary/index.d.ts",
+      "default": "./dist/res-canary/index.js"
     },
-    "./element": {
-      "types": "./dist/element.d.ts",
-      "default": "./dist/element.js"
+    "./res-canary/element": {
+      "types": "./dist/res-canary/element.d.ts",
+      "default": "./dist/res-canary/element.js"
     },
     "./package.json": "./package.json"
   },
-  "types": "./dist/index.d.ts",
   "files": ["dist"],
 ```
 
-Add these scripts:
+Add these scripts to `packages/thoro-ui/package.json`:
 
 ```json
-    "build": "tsdown",
-    "prepack": "pnpm build",
+    "build": "vp pack",
+    "prepack": "vp pack",
     "size": "size-limit",
     "test:ssr": "node test/ssr.ts",
 ```
 
-- [ ] **Step 4: Create `.size-limit.json`**
+Add these scripts to the root `package.json`:
+
+```json
+    "build": "vp run -r build",
+    "size": "vp run -r size",
+    "test:ssr": "vp run -r test:ssr",
+```
+
+`pnpm pack` only ships the package folder, so the package needs its own LICENSE and README:
+
+Run: `cp LICENSE packages/thoro-ui/LICENSE && printf '# thoro-ui\n' > packages/thoro-ui/README.md`
+
+- [ ] **Step 4: Create `packages/thoro-ui/.size-limit.json`**
 
 ```json
 [
-  { "name": "core", "path": "dist/index.js", "limit": "2 KB", "gzip": true },
-  { "name": "element (with everything it imports)", "path": "dist/element.js", "limit": "4 KB", "gzip": true }
+  { "name": "res-canary core", "path": "dist/res-canary/index.js", "limit": "2 KB", "gzip": true },
+  {
+    "name": "res-canary element (with everything it imports)",
+    "path": "dist/res-canary/element.js",
+    "limit": "4 KB",
+    "gzip": true
+  }
 ]
 ```
 
 - [ ] **Step 5: Write the server-import check**
 
-`test/ssr.ts`:
+`packages/thoro-ui/test/ssr.ts`:
 
 ```ts
 // Imports the built package in plain Node (no DOM) to prove neither entry point touches
@@ -2655,8 +2632,8 @@ import assert from 'node:assert/strict'
 
 assert.equal(typeof globalThis.document, 'undefined')
 
-const core = await import(new URL('../dist/index.js', import.meta.url).href)
-const element = await import(new URL('../dist/element.js', import.meta.url).href)
+const core = await import(new URL('../dist/res-canary/index.js', import.meta.url).href)
+const element = await import(new URL('../dist/res-canary/element.js', import.meta.url).href)
 
 const canary = core.createCanary({
   features: [{ id: 'a', impact: 'A is unavailable.', label: 'A', origins: ['https://a.example'] }],
@@ -2670,20 +2647,23 @@ assert.deepEqual(
   ['a'],
 )
 assert.equal(typeof element.mountBanner, 'function')
-element.defineCanaryElement()
+element.defineResCanaryElement()
 
 console.log('ssr: ok')
 ```
 
 - [ ] **Step 6: Run the check before building to verify it fails**
 
-Run: `rm -rf dist && pnpm test:ssr`
-Expected: FAIL — `ERR_MODULE_NOT_FOUND` for `dist/index.js`.
+Run: `rm -rf packages/thoro-ui/dist && pnpm test:ssr`
+Expected: FAIL — `ERR_MODULE_NOT_FOUND` for `dist/res-canary/index.js`.
 
 - [ ] **Step 7: Build and run the checks**
 
 Run: `pnpm build`
-Expected: `dist/index.js`, `dist/index.d.ts`, `dist/element.js`, `dist/element.d.ts` (and `.map` files) listed; `Build complete`.
+Expected: `dist/res-canary/index.js`, `dist/res-canary/index.d.ts`, `dist/res-canary/element.js`, `dist/res-canary/element.d.ts` (and `.map` files) listed; `Build complete`. A shared chunk may also appear if both entries use the same module; that is expected.
+
+Run: `ls packages/thoro-ui/dist packages/thoro-ui/dist/res-canary`
+Expected: `dist/` holds `res-canary/` (and any shared chunk) but no `index.js` or `element.js` of its own — the nested output paths the exports point at (collection spec §1, the check it asks for).
 
 Run: `pnpm test:ssr`
 Expected: prints `ssr: ok`, exit 0.
@@ -2691,13 +2671,13 @@ Expected: prints `ssr: ok`, exit 0.
 Run: `pnpm size`
 Expected: both entries under their limits (core ≤ 2 KB, element ≤ 4 KB), exit 0. If either is over, stop and report the numbers to the maintainer rather than raising the limit.
 
-Run: `grep -c "HTMLElementTagNameMap" dist/element.d.ts`
-Expected: `1` or more — the global JSX-free typing for `document.createElement('web-res-canary')` ships with the types.
+Run: `grep -c "HTMLElementTagNameMap" packages/thoro-ui/dist/res-canary/element.d.ts`
+Expected: `1` or more — the global typing for `document.createElement('thoro-res-canary')` ships with the types.
 
 - [ ] **Step 8: Check what npm would publish**
 
-Run: `pnpm pack && tar -tzf web-res-canary-0.0.0.tgz && rm web-res-canary-0.0.0.tgz`
-Expected: `package/package.json`, `package/README.md`, `package/LICENSE`, and `package/dist/` with `index.js`, `index.d.ts`, `element.js`, `element.d.ts` and their maps. Nothing from `src/`, `test/`, `docs/` or `examples/`.
+Run: `cd packages/thoro-ui && pnpm pack && tar -tzf thoro-ui-0.0.0.tgz && rm thoro-ui-0.0.0.tgz && cd ../..`
+Expected: `package/package.json`, `package/README.md`, `package/LICENSE`, and `package/dist/res-canary/` with `index.js`, `index.d.ts`, `element.js`, `element.d.ts` and their maps (plus any shared chunk in `package/dist/`). Nothing from `src/` or `test/`.
 
 - [ ] **Step 9: Lint, format, type-check, unit tests**
 
@@ -2714,25 +2694,25 @@ Propose: `build: package entry points, size budget and server-import check`. Do 
 
 **Files:**
 
-- Create: `test/browser/fixtures/harness.js`, `test/browser/scenarios.spec.ts`
-- Modify: `test/browser/globals.d.ts`, `package.json` (`test:browser` script)
+- Create: `packages/thoro-ui/test/browser/fixtures/res-canary-harness.js`, `packages/thoro-ui/test/browser/res-canary/scenarios.spec.ts`
+- Modify: `packages/thoro-ui/test/browser/globals.d.ts`, `packages/thoro-ui/package.json` (`test:browser` script)
 
 **Interfaces:**
 
-- Consumes: the fixture server and policies (Task 1); `dist/index.js` → `createCanary`, `dist/element.js` → `mountBanner` (Task 8).
+- Consumes: the fixture server and policies (Task 1; `script` is required in `/page` URLs); `dist/res-canary/index.js` → `createCanary`, `dist/res-canary/element.js` → `mountBanner` (Task 8).
 - Produces: nothing new for later tasks.
 
 - [ ] **Step 1: Make the browser tests build first**
 
-In `package.json`, change `"test:browser": "playwright test"` to `"test:browser": "pnpm build && playwright test"`.
+In `packages/thoro-ui/package.json`, change `"test:browser": "playwright test"` to `"test:browser": "vp pack && playwright test"`. The root `test:browser` (`vp run -r test:browser`) stays as it is.
 
 - [ ] **Step 2: Create the harness**
 
-`test/browser/fixtures/harness.js`:
+Fixtures are named after their component, because the fixture server is shared by every component. `packages/thoro-ui/test/browser/fixtures/res-canary-harness.js`:
 
 ```js
-import { createCanary } from '/dist/index.js'
-import { mountBanner } from '/dist/element.js'
+import { createCanary } from '/dist/res-canary/index.js'
+import { mountBanner } from '/dist/res-canary/element.js'
 
 const VENDOR = 'http://127.0.0.1:4174'
 const violations = []
@@ -2774,11 +2754,11 @@ globalThis.harness = {
     return canary.getSnapshot().blocked.map(feature => feature.id)
   },
   bannerText() {
-    const element = document.querySelector('web-res-canary')
+    const element = document.querySelector('thoro-res-canary')
     return element && !element.hidden ? element.shadowRoot.textContent : null
   },
   bannerPadding() {
-    const root = document.querySelector('web-res-canary')?.shadowRoot?.querySelector('[part="root"]')
+    const root = document.querySelector('thoro-res-canary')?.shadowRoot?.querySelector('[part="root"]')
     return root ? getComputedStyle(root).paddingLeft : null
   },
 }
@@ -2786,7 +2766,7 @@ globalThis.harness = {
 
 - [ ] **Step 3: Type the harness global**
 
-Replace `test/browser/globals.d.ts` with:
+Replace `packages/thoro-ui/test/browser/globals.d.ts` with:
 
 ```ts
 type HarnessProbe = { type: 'fetch' | 'image' | 'script' | 'style'; url: string }
@@ -2811,7 +2791,7 @@ export {}
 
 - [ ] **Step 4: Write the scenarios**
 
-`test/browser/scenarios.spec.ts`:
+`packages/thoro-ui/test/browser/res-canary/scenarios.spec.ts`:
 
 ```ts
 import { expect, test, type Page } from '@playwright/test'
@@ -2821,7 +2801,7 @@ const VENDOR = 'http://127.0.0.1:4174'
 // The harness is a module script, which runs before the load event goto() waits for.
 // Only page.evaluate is used: it goes through the automation protocol, not the page's (blocked) eval.
 async function open(page: Page, csp: 'allowed' | 'foreign' | 'own-blocks' | 'strict'): Promise<void> {
-  await page.goto(`/page?csp=${csp}`)
+  await page.goto(`/page?csp=${csp}&script=res-canary-harness`)
 }
 
 const status = (page: Page): Promise<string> => page.evaluate(() => harness.status())
@@ -2913,6 +2893,8 @@ test.describe('probes', () => {
 Run: `pnpm test:browser`
 Expected: every test passes in chromium, firefox and webkit — `45 passed` (Task 1's stylesheet check plus 14 scenarios, × 3 engines).
 
+Inside an agent sandbox, Firefox can't launch (AGENTS.md). Run `pnpm -C packages/thoro-ui test:browser --project=chromium --project=webkit` (expected `30 passed`), and ask the maintainer to run `pnpm -C packages/thoro-ui test:browser --project=firefox` from a normal terminal (expected `15 passed`).
+
 If one engine fails a scenario, read its failure before changing code. The two known ways a real engine can differ from the others here: it may report `blockedURI` as an origin rather than a full URL (still matches, since matching ignores the path), or it may not fire `error` on a preload link blocked by CSP (the violation event still classifies it). Fix the package only if its behaviour contradicts the spec; otherwise report the engine difference to the maintainer.
 
 - [ ] **Step 6: Lint, format, type-check**
@@ -2926,46 +2908,71 @@ Propose: `test: cover real-browser scenarios in Chromium, Firefox and WebKit`. D
 
 ---
 
-### Task 10: README, examples and CI
+### Task 10: READMEs, examples and CI
 
 **Files:**
 
-- Create: `examples/vanilla/index.html`, `examples/vanilla/main.js`, `examples/react/app.tsx`, `.github/workflows/ci.yml`
-- Modify: `README.md` (replace), `tsconfig.json` (`jsx`, `paths`, `include`), `package.json` (dev deps)
+- Create: `examples/react/package.json`, `examples/react/tsconfig.json`, `examples/react/app.tsx`, `examples/vanilla/package.json`, `examples/vanilla/index.html`, `examples/vanilla/main.js`, `.github/workflows/ci.yml`
+- Modify: `packages/thoro-ui/README.md` (replace the stub — this is the npm page), `README.md` (replace — the repo overview), `pnpm-lock.yaml` (by `pnpm install`)
 
 **Interfaces:**
 
-- Consumes: the public API from `web-res-canary` and `web-res-canary/element` (Tasks 4–8).
+- Consumes: the public API from `thoro-ui/res-canary` and `thoro-ui/res-canary/element` (Tasks 4–8); the workspace (Task 1), whose `examples/*` glob picks up both examples.
 - Produces: nothing for later tasks.
 
-- [ ] **Step 1: Type-check the React example against the source**
+- [ ] **Step 1: Create the React example package**
 
-Run: `pnpm add -D -E react@19.3.0 @types/react@19.3.0`
+The React example is type-checked, not run. Its tsconfig maps the package's entry points to their source, so the type check needs no build first.
 
-In `tsconfig.json` `compilerOptions`, add:
+`examples/react/package.json`:
 
 ```json
-    "jsx": "react-jsx",
-    "paths": {
-      "web-res-canary": ["./src/index.ts"],
-      "web-res-canary/element": ["./src/element.ts"]
-    },
+{
+  "name": "example-react",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "react": "19.3.0",
+    "thoro-ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0"
+  }
+}
 ```
 
-and change `"include": ["src", "test"]` to `"include": ["src", "test", "examples"]`.
+`examples/react/tsconfig.json`:
+
+```json
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "paths": {
+      "thoro-ui/res-canary": ["../../packages/thoro-ui/src/res-canary/index.ts"],
+      "thoro-ui/res-canary/element": ["../../packages/thoro-ui/src/res-canary/element.ts"]
+    },
+    "types": []
+  },
+  "include": ["app.tsx"]
+}
+```
 
 - [ ] **Step 2: Create `examples/react/app.tsx`**
 
 ```tsx
 import { useCallback, useSyncExternalStore, type DetailedHTMLProps, type HTMLAttributes, type JSX } from 'react'
-import { createCanary, type BlockedFeature, type Canary } from 'web-res-canary'
-import 'web-res-canary/element'
-import type { WebResCanaryElement } from 'web-res-canary/element'
+import { createCanary, type BlockedFeature, type Canary } from 'thoro-ui/res-canary'
+import 'thoro-ui/res-canary/element'
+import type { ResCanaryElement } from 'thoro-ui/res-canary/element'
 
 declare module 'react' {
   namespace JSX {
     interface IntrinsicElements {
-      'web-res-canary': DetailedHTMLProps<HTMLAttributes<WebResCanaryElement>, WebResCanaryElement> & {
+      'thoro-res-canary': DetailedHTMLProps<HTMLAttributes<ResCanaryElement>, ResCanaryElement> & {
         variant?: 'banner' | 'inline'
       }
     }
@@ -2994,16 +3001,16 @@ export function CanaryBanner(): JSX.Element {
   const snapshot = useSyncExternalStore(canary.subscribe, canary.getSnapshot)
   const items = snapshot.dismissed ? NOTHING : snapshot.blocked
   const ref = useCallback(
-    (element: WebResCanaryElement | null) => {
+    (element: ResCanaryElement | null) => {
       if (!element) return
       element.items = items
       const onDismiss = (): void => canary.dismiss()
-      element.addEventListener('canary-dismiss', onDismiss)
-      return () => element.removeEventListener('canary-dismiss', onDismiss)
+      element.addEventListener('res-canary-dismiss', onDismiss)
+      return () => element.removeEventListener('res-canary-dismiss', onDismiss)
     },
     [items],
   )
-  return <web-res-canary ref={ref} variant="banner" />
+  return <thoro-res-canary ref={ref} variant="banner" />
 }
 
 /** Custom UI: the core alone, no element. */
@@ -3021,10 +3028,28 @@ export function CanaryNotice(): JSX.Element | null {
 }
 ```
 
-Run: `pnpm typecheck`
-Expected: exit 0.
+Run: `pnpm install && pnpm typecheck`
+Expected: exit 0; the output shows `tsc -p .` running in both `packages/thoro-ui` and `examples/react`.
 
 - [ ] **Step 3: Create the vanilla example**
+
+A plain HTML page and one module, served by the Vite dev server that comes with Vite+. It imports the package by name, like an app would; the workspace links it to `packages/thoro-ui`, whose exports point at `dist/` — so build first.
+
+`examples/vanilla/package.json`:
+
+```json
+{
+  "name": "example-vanilla",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vp dev"
+  },
+  "dependencies": {
+    "thoro-ui": "workspace:*"
+  }
+}
+```
 
 `examples/vanilla/index.html`:
 
@@ -3033,11 +3058,11 @@ Expected: exit 0.
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>web-res-canary — vanilla example</title>
+    <title>thoro-ui — res-canary example</title>
     <script type="module" src="./main.js"></script>
   </head>
   <body>
-    <h1>web-res-canary</h1>
+    <h1>res-canary</h1>
     <p>This page probes a host that never resolves, so the banner appears above this heading.</p>
   </body>
 </html>
@@ -3046,10 +3071,8 @@ Expected: exit 0.
 `examples/vanilla/main.js`:
 
 ```js
-// Served by the test server after `pnpm build`. In your app, import from 'web-res-canary'
-// and 'web-res-canary/element' instead of /dist.
-import { createCanary } from '/dist/index.js'
-import { mountBanner } from '/dist/element.js'
+import { createCanary } from 'thoro-ui/res-canary'
+import { mountBanner } from 'thoro-ui/res-canary/element'
 
 const canary = createCanary({
   features: [
@@ -3069,35 +3092,62 @@ canary.start()
 mountBanner(canary)
 ```
 
-Run: `pnpm build && node test/browser/server.ts`, then open `http://127.0.0.1:4173/examples/vanilla/index.html`.
+Run: `pnpm install && pnpm build && pnpm -C examples/vanilla dev`, then open the local URL it prints (`http://localhost:5173/`).
 Expected: within a few seconds a banner reading "Some features couldn't load: Support chat." appears at the top; **Details** lists "Support chat — The support chat bubble won't appear." and `https://widget.chat.invalid`; **Copy for IT** changes to "Copied"; **×** hides it. Stop the server with Ctrl+C.
 
-- [ ] **Step 4: Replace `README.md`**
+- [ ] **Step 4: Replace `packages/thoro-ui/README.md`**
+
+This is what npm shows. Links into the repo are absolute, because relative links break on npmjs.com.
 
 ````markdown
-# web-res-canary
+# thoro-ui
 
-Tell users when their browser or network blocks the third-party resources your web app depends on — and give their IT team the exact addresses to allow.
+Small, dependency-free web components for compliance-minded web apps. Every component has its own entry point, so your bundle only carries what you import.
 
-Your own Content Security Policy (CSP) allows your support chat, your e-signature SDK, your CDN. Some users still can't load them: a browser extension adds a stricter CSP, a corporate proxy injects one, or an ad blocker or firewall drops the request. Your app isn't told; the user just sees something missing. `web-res-canary` notices, explains what won't work, and hands them the allowlist.
+| component    | import                                               | what it does                                                                                                                                    |
+| ------------ | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `res-canary` | `thoro-ui/res-canary`, `thoro-ui/res-canary/element` | Tells users when their browser or network blocks the third-party resources your app depends on, and gives their IT team the addresses to allow. |
 
-- **Zero dependencies.** Core ≤ 2 KB, element ≤ 4 KB (gzip).
+- **Zero dependencies.** Each component has its own size budget, enforced in CI.
 - **Works under the strictest CSP**, including Trusted Types.
-- **Any framework or none:** a headless core plus a `<web-res-canary>` custom element.
+- **Any framework or none:** plain custom elements, plus a headless core where a component has one.
 
 ## Install
 
 ```sh
-npm install web-res-canary
+npm install thoro-ui
 ```
 
-## Quick start
+## Theming
+
+Every component reads the same custom properties: `--thoro-bg`, `--thoro-fg`, `--thoro-border`, `--thoro-accent`, `--thoro-radius`, `--thoro-font`. Set them on `:root` to theme the whole collection, or on one tag to theme one component:
+
+```css
+:root {
+  --thoro-accent: #c2410c;
+  --thoro-font: inherit;
+}
+thoro-res-canary {
+  --thoro-bg: #fff7ed;
+  --thoro-border: #fb923c;
+}
+```
+
+Shadow DOM keeps your page's CSS out; each component also exposes `::part()` names, listed in its section below.
+
+## res-canary
+
+Your own Content Security Policy (CSP) allows your support chat, your e-signature SDK, your CDN. Some users still can't load them: a browser extension adds a stricter CSP, a corporate proxy injects one, or an ad blocker or firewall drops the request. Your app isn't told; the user just sees something missing. The canary notices, explains what won't work, and hands them the allowlist.
+
+Core ≤ 2 KB, element ≤ 4 KB (gzip).
+
+### Quick start
 
 Call `start()` as early as possible — before you load any third-party script.
 
 ```js
-import { createCanary } from 'web-res-canary'
-import { mountBanner } from 'web-res-canary/element'
+import { createCanary } from 'thoro-ui/res-canary'
+import { mountBanner } from 'thoro-ui/res-canary/element'
 
 const canary = createCanary({
   ownPolicy: 'api.example.com', // any string unique to your own CSP
@@ -3116,7 +3166,7 @@ canary.start()
 mountBanner(canary)
 ```
 
-## How it detects a block
+### How it detects a block
 
 | Signal                                                                                          | Status        | Shown to the user?                                   |
 | ----------------------------------------------------------------------------------------------- | ------------- | ---------------------------------------------------- |
@@ -3128,11 +3178,11 @@ mountBanner(canary)
 
 A status only moves up (`unknown → ok → load-failed → foreign-csp → own-csp`), so the most specific reason wins whatever order events arrive in.
 
-### Choosing `ownPolicy`
+#### Choosing `ownPolicy`
 
 Browsers give a page no way to read its own CSP headers, so the canary recognises yours inside each violation's `originalPolicy`. Pass a string that only your policy contains (your API host works well), a `RegExp`, or a function `(policy) => boolean`. It is required: without it, every CSP block would be ambiguous.
 
-### Features
+#### Features
 
 | field     | meaning                                                                                                                                                                                       |
 | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -3142,45 +3192,27 @@ Browsers give a page no way to read its own CSP headers, so the canary recognise
 | `origins` | CSP host-source syntax: `https://host`, `https://*.host`, `wss://host:8443`. No paths. Also the list IT is asked to allow.                                                                    |
 | `probe`   | Optional startup check: `script` or `style` (preloads, never runs it), `image`, `fetch` (`no-cors`; needs the origin in your `connect-src`), or `custom` (`run(signal) => Promise<boolean>`). |
 
-## The element
+### The element
 
 ```js
-import 'web-res-canary/element' // defines <web-res-canary>
+import 'thoro-ui/res-canary/element' // defines <thoro-res-canary>
 ```
 
 - **Uncontrolled:** `element.canary = canary`. It subscribes and dismisses itself.
-- **Controlled:** `element.items = snapshot.blocked`. It renders only what you give it and fires `canary-dismiss` (`detail.ids`) and `canary-copy` (`detail.text`, `detail.copied`); your code owns the state.
+- **Controlled:** `element.items = snapshot.blocked`. It renders only what you give it and fires `res-canary-dismiss` (`detail.ids`) and `res-canary-copy` (`detail.text`, `detail.copied`); your code owns the state.
 - `variant="banner"` is a full-width strip; `variant="inline"` (default) is a card.
 - `element.strings = { title: '…' }` overrides any text: `title`, `cause`, `details`, `itAsk`, `copy`, `copied`, `dismiss`.
-- `defineCanaryElement('my-tag')` registers it under another name.
+- `defineResCanaryElement('my-tag')` registers it under another name.
 
-Both events bubble, cross shadow boundaries and are cancelable; `preventDefault()` on `canary-dismiss` skips the uncontrolled dismiss.
+Both events bubble, cross shadow boundaries and are cancelable; `preventDefault()` on `res-canary-dismiss` skips the uncontrolled dismiss.
 
-### React 19
+Parts: `root`, `summary`, `title`, `details`, `list`, `origins`, `copy`, `dismiss`. `--thoro-radius` applies to the inline card only.
 
-React 19 supports custom elements natively. See [`examples/react/app.tsx`](examples/react/app.tsx) for controlled mode and for a fully custom UI with `useSyncExternalStore(canary.subscribe, canary.getSnapshot)`.
+#### React 19
 
-### Theming
+React 19 supports custom elements natively. See [`examples/react/app.tsx`](https://github.com/TheHaff/thoro-ui/blob/main/examples/react/app.tsx) for controlled mode and for a fully custom UI with `useSyncExternalStore(canary.subscribe, canary.getSnapshot)`.
 
-Shadow DOM keeps your page's CSS out, so style it through custom properties and parts:
-
-```css
-web-res-canary {
-  --wrc-bg: #fff7ed;
-  --wrc-fg: #1f2937;
-  --wrc-border: #fb923c;
-  --wrc-accent: #c2410c;
-  --wrc-radius: 12px;
-  --wrc-font: inherit;
-}
-web-res-canary::part(copy) {
-  font-weight: 600;
-}
-```
-
-Parts: `root`, `summary`, `title`, `details`, `list`, `origins`, `copy`, `dismiss`.
-
-## API
+### API
 
 ```ts
 createCanary(options): Canary
@@ -3193,9 +3225,9 @@ canary.subscribe(fn)  // returns unsubscribe
 canary.getSnapshot()  // { blocked, dismissed, statuses }
 ```
 
-Options: `features`, `ownPolicy` (required), `onChange`, `onOwnPolicyViolation`, `storage` (default `localStorage`; `null` = this page only), `storageKey` (default `web-res-canary:dismissed`), `probeTimeoutMs` (default `15000`; `0` disables).
+Options: `features`, `ownPolicy` (required), `onChange`, `onOwnPolicyViolation`, `storage` (default `localStorage`; `null` = this page only), `storageKey` (default `thoro-ui:res-canary:dismissed`), `probeTimeoutMs` (default `15000`; `0` disables).
 
-## Limitations
+### Limitations
 
 - **Iframes:** browsers don't report iframe load failures reliably, so they aren't detected.
 - **`fetch`, XHR, WebSocket, WebRTC:** not detected automatically — call `canary.report(id)` from your error handling.
@@ -3213,7 +3245,48 @@ Current Chrome, Edge, Firefox and Safari 16.4+.
 MIT
 ````
 
-- [ ] **Step 5: Create `.github/workflows/ci.yml`**
+- [ ] **Step 5: Replace the root `README.md`**
+
+````markdown
+# thoro-ui
+
+Small, dependency-free web components for compliance-minded web apps, published as one tree-shakeable npm package. The user guide is the package README: [`packages/thoro-ui`](packages/thoro-ui/README.md).
+
+## Components
+
+| component    | what it does                                                                                                                                    |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `res-canary` | Tells users when their browser or network blocks the third-party resources your app depends on, and gives their IT team the addresses to allow. |
+
+## Repo layout
+
+```
+packages/thoro-ui/   the published package: src/<component>/, tests, build config
+examples/vanilla/    a plain page on the Vite dev server
+examples/react/      React 19, type-checked in CI
+docs/specs/          designs: the collection rules and one spec per component
+docs/plans/          implementation plans
+```
+
+## Development
+
+Needs Node 24 and pnpm (the version in `package.json` is picked up automatically).
+
+```sh
+pnpm install
+pnpm test           # unit tests
+pnpm build          # packages/thoro-ui/dist
+pnpm test:browser   # Playwright in Chromium, Firefox and WebKit
+```
+
+[`AGENTS.md`](AGENTS.md) lists every command and the rules for contributing.
+
+## License
+
+MIT
+````
+
+- [ ] **Step 6: Create `.github/workflows/ci.yml`**
 
 ```yaml
 name: CI
@@ -3241,20 +3314,20 @@ jobs:
       - run: pnpm build
       - run: pnpm size
       - run: pnpm test:ssr
-      - run: pnpm exec playwright install --with-deps chromium firefox webkit
+      - run: pnpm -C packages/thoro-ui exec playwright install --with-deps chromium firefox webkit
       - run: pnpm test:browser
 ```
 
-Publishing to npm stays manual and maintainer-approved (spec §8); this workflow never publishes.
+Publishing to npm stays manual and maintainer-approved (canary spec §9); this workflow never publishes.
 
-- [ ] **Step 6: Run the full check locally**
+- [ ] **Step 7: Run the full check locally**
 
 Run: `pnpm format && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build && pnpm size && pnpm test:ssr && pnpm test:browser`
-Expected: every command exits 0.
+Expected: every command exits 0. Inside an agent sandbox, replace the last command with `pnpm -C packages/thoro-ui test:browser --project=chromium --project=webkit` and ask the maintainer to run the Firefox project from a normal terminal (AGENTS.md).
 
 Ask the maintainer for their list of private company, customer and vendor names (never write that list into this repo), then run `grep -rniE "<name1>|<name2>|…" --exclude-dir=node_modules --exclude-dir=.git . || echo clean`.
 Expected: `clean`.
 
-- [ ] **Step 7: Hand off for commit**
+- [ ] **Step 8: Hand off for commit**
 
-Propose: `docs: add README, examples and CI`. Do not run git.
+Propose: `docs: add READMEs, examples and CI`. Do not run git.
