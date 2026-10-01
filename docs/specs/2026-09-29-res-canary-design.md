@@ -1,11 +1,14 @@
-# web-res-canary — design
+# res-canary — design
 
-- **Status:** approved 2026-09-29. Not yet implemented.
-- **Package:** `web-res-canary` (npm name free as of 2026-09-29)
-- **Element:** `<web-res-canary>`
+- **Status:** approved 2026-09-29; updated 2026-10-01 to become a thoro-ui component. Not yet implemented.
+- **Package:** `thoro-ui`, entries `thoro-ui/res-canary` and `thoro-ui/res-canary/element`
+- **Element:** `<thoro-res-canary>`
 - **License:** MIT
-- **Implementation plan:** [`docs/plans/2026-09-29-web-res-canary.md`](../plans/2026-09-29-web-res-canary.md) — 10 tasks with code, tests and commands. Start at Task 1.
+- **Collection rules:** [`2026-10-01-thoro-ui-design.md`](2026-10-01-thoro-ui-design.md). Layout, naming, theming and tooling come from there; this document covers what is specific to the canary.
+- **Implementation plan:** `docs/plans/2026-10-01-res-canary.md` (being rewritten for the new layout).
 - **Working rules for this repo:** [`AGENTS.md`](../../AGENTS.md)
+
+> **Changed 2026-10-01.** This spec was `web-res-canary`, a package of its own. It is now the first component of thoro-ui. Renamed: package `web-res-canary` → entries `thoro-ui/res-canary` and `thoro-ui/res-canary/element`; tag `<web-res-canary>` → `<thoro-res-canary>`; `defineCanaryElement` → `defineResCanaryElement`; events `canary-dismiss` / `canary-copy` → `res-canary-dismiss` / `res-canary-copy`; CSS variables `--wrc-*` → the collection's shared `--thoro-*`; storage key `web-res-canary:dismissed` → `thoro-ui:res-canary:dismissed`. §9 now defers to the collection spec, and §12's name decision is superseded. Detection, the core API, statuses, probes and the size budget are unchanged.
 
 ## 1. Problem
 
@@ -48,11 +51,11 @@ This hits hardest in locked-down environments — regulated industries, large en
 
 ## 5. Architecture
 
-Two entry points, one package, zero runtime dependencies.
+Two entry points in the `thoro-ui` package, zero runtime dependencies.
 
 ```
-web-res-canary            core — headless detection + store. No DOM rendering.
-web-res-canary/element    <web-res-canary> custom element. Renders a core snapshot.
+thoro-ui/res-canary            core — headless detection + store. No DOM rendering.
+thoro-ui/res-canary/element    <thoro-res-canary> custom element. Renders a core snapshot.
 ```
 
 The core is usable on its own (custom UI via `subscribe`/`getSnapshot`). The element renders what the core produces; the core never depends on the element.
@@ -103,7 +106,7 @@ type CanaryOptions = {
   onChange?: (snapshot: Snapshot) => void
   onOwnPolicyViolation?: (violation: OwnPolicyViolation) => void
   storage?: CanaryStorage | null // default: localStorage; null keeps dismissal in memory for this page
-  storageKey?: string // default: 'web-res-canary:dismissed'
+  storageKey?: string // default: 'thoro-ui:res-canary:dismissed'
   probeTimeoutMs?: number // default: 15000; 0 disables the timeout
 }
 
@@ -211,17 +214,17 @@ The error event and the violation event for the same request arrive in either or
 
 A listener that throws does not stop the others; its error is rethrown in a microtask so it still reaches error tracking.
 
-## 7. Element `<web-res-canary>`
+## 7. Element `<thoro-res-canary>`
 
 ### 7.1 Registration
 
 ```ts
-import 'web-res-canary/element' // defines <web-res-canary>
-import { defineCanaryElement } from 'web-res-canary/element'
-defineCanaryElement('my-canary') // additionally registers a custom tag name
+import 'thoro-ui/res-canary/element' // defines <thoro-res-canary>
+import { defineResCanaryElement } from 'thoro-ui/res-canary/element'
+defineResCanaryElement('my-canary') // additionally registers a custom tag name
 ```
 
-Definition is skipped when `customElements` is undefined (server) or the tag is already defined. The class is created inside `defineCanaryElement`, so importing the module where `HTMLElement` does not exist is safe.
+Definition is skipped when `customElements` is undefined (server) or the tag is already defined. The class is created inside `defineResCanaryElement`, so importing the module where `HTMLElement` does not exist is safe.
 
 Properties set on an element before its class is defined (markup-first pages, or a framework that renders before the import runs) are picked up when it upgrades.
 
@@ -237,7 +240,7 @@ el.canary = canary
 
 ```ts
 el.items = snapshot.blocked // BlockedFeature[]
-el.addEventListener('canary-dismiss', …)
+el.addEventListener('res-canary-dismiss', …)
 ```
 
 When `items` is set (not `undefined`), the element is controlled and ignores `canary`.
@@ -247,7 +250,7 @@ The element unsubscribes when removed from the page and catches up with the curr
 **Banner helper:**
 
 ```ts
-import { mountBanner } from 'web-res-canary/element'
+import { mountBanner } from 'thoro-ui/res-canary/element'
 const el = mountBanner(canary) // variant="banner", prepended to <body>; waits for DOMContentLoaded if needed
 el.remove() // unmount
 ```
@@ -279,10 +282,10 @@ Feature labels in the summary line are joined with `Intl.ListFormat` using the e
 
 Both are `bubbles: true, composed: true, cancelable: true`.
 
-| event            | detail                              | uncontrolled default action (skipped if `preventDefault()`) |
-| ---------------- | ----------------------------------- | ----------------------------------------------------------- |
-| `canary-dismiss` | `{ ids: string[] }`                 | `canary.dismiss()`                                          |
-| `canary-copy`    | `{ text: string, copied: boolean }` | none                                                        |
+| event                | detail                              | uncontrolled default action (skipped if `preventDefault()`) |
+| -------------------- | ----------------------------------- | ----------------------------------------------------------- |
+| `res-canary-dismiss` | `{ ids: string[] }`                 | `canary.dismiss()`                                          |
+| `res-canary-copy`    | `{ text: string, copied: boolean }` | none                                                        |
 
 ### 7.5 Rendering
 
@@ -306,23 +309,23 @@ Sets the `hidden` attribute on the host (and renders no children) when the list 
   └ button  part="dismiss"  aria-label={dismiss}   ×
 ```
 
-- **Copy for IT** writes the `origins` text with `navigator.clipboard.writeText`. On success the button text changes to `{copied}` and the status region announces it. If the clipboard is unavailable or refuses, it selects the `<pre>` contents (best effort) so the user can copy manually, and fires `canary-copy` with `copied: false`.
+- **Copy for IT** writes the `origins` text with `navigator.clipboard.writeText`. On success the button text changes to `{copied}` and the status region announces it. If the clipboard is unavailable or refuses, it selects the `<pre>` contents (best effort) so the user can copy manually, and fires `res-canary-copy` with `copied: false`.
 - The open/closed state of `details` survives re-renders.
 - Labels and impacts are rendered as text, never as markup.
 - Focus is never moved when the element appears. All controls are native elements, so keyboard support comes for free.
 
 ### 7.6 Theming
 
-Shadow DOM keeps host CSS out, so theming goes through CSS custom properties and `::part()`.
+Shadow DOM keeps host CSS out, so theming goes through CSS custom properties and `::part()`. The properties are the collection's shared set ([collection spec §2](2026-10-01-thoro-ui-design.md)): set them on `:root` to theme every thoro-ui component, or on `thoro-res-canary` to theme only this one. The canary's own defaults are the `var()` fallbacks.
 
-| property       | purpose                     |
-| -------------- | --------------------------- |
-| `--wrc-bg`     | background                  |
-| `--wrc-fg`     | text                        |
-| `--wrc-border` | border                      |
-| `--wrc-accent` | icon and focus ring         |
-| `--wrc-radius` | corner radius (inline only) |
-| `--wrc-font`   | font family                 |
+| property         | purpose                     |
+| ---------------- | --------------------------- |
+| `--thoro-bg`     | background                  |
+| `--thoro-fg`     | text                        |
+| `--thoro-border` | border                      |
+| `--thoro-accent` | icon and focus ring         |
+| `--thoro-radius` | corner radius (inline only) |
+| `--thoro-font`   | font family                 |
 
 Parts: `root`, `summary`, `title`, `details`, `list`, `origins`, `copy`, `dismiss`.
 
@@ -337,18 +340,17 @@ The package must run on a page with `default-src 'self'`, no `'unsafe-inline'`, 
 - No `eval`, `new Function`, or string timers. No inline event handlers.
 - No network requests other than the configured probes. No fonts, icons or scripts from a CDN.
 
-**To verify in the first implementation task:** that constructed stylesheets are not blocked by a strict `style-src` in Chromium, Firefox and WebKit. If any engine blocks them, stop: the fallback is a `nonce` property that the element applies to a `<style>` element instead, which changes the element's design and needs the maintainer's approval.
+**To verify in the first implementation task:** that constructed stylesheets are not blocked by a strict `style-src` in Chromium, Firefox and WebKit. If any engine blocks them, stop: the fallback is a `nonce` property that the element applies to a `<style>` element instead, which changes the element's design and needs the maintainer's approval. Verified 2026-09-30 in Chromium and WebKit (no violations, sheet applied); Firefox still to run, from a normal terminal because the agent sandbox stops Firefox launching.
 
 ## 9. Packaging
 
-- ESM only, with `.d.ts`. `"type": "module"`.
-- `exports`: `"."` → core, `"./element"` → element.
-- `"sideEffects": ["./dist/element.js"]` so the core tree-shakes.
-- The published types include the global `HTMLElementTagNameMap['web-res-canary']` and `HTMLElementEventMap` entries, so `document.createElement('web-res-canary')` and `addEventListener('canary-dismiss', …)` are typed.
-- Built with tsdown. TypeScript strict. Linted with oxlint, formatted with oxfmt. pnpm.
+Packaging, tooling and CI follow the [collection spec](2026-10-01-thoro-ui-design.md) (§1 and §3). Specific to the canary:
+
+- `exports`: `"./res-canary"` → core (`dist/res-canary/index.js`), `"./res-canary/element"` → element (`dist/res-canary/element.js`). Only the element entry has side effects.
+- The published types include the global `HTMLElementTagNameMap['thoro-res-canary']` and `HTMLElementEventMap` entries for `res-canary-dismiss` and `res-canary-copy`, so `document.createElement('thoro-res-canary')` and `addEventListener('res-canary-dismiss', …)` are typed.
 - Size budget enforced in CI: core ≤ 2 KB gzip, element (including core) ≤ 4 KB gzip.
 - Browser support: current evergreen browsers; Safari 16.4+ (first version with `adoptedStyleSheets`).
-- CI on GitHub Actions: lint, format check, typecheck, unit tests, build, size check, server-import check, browser tests. Publishing to npm (with provenance) is a manual, maintainer-approved step.
+- Publishing to npm (with provenance) is a manual, maintainer-approved step.
 
 ## 10. Testing
 
@@ -375,8 +377,8 @@ The package must run on a page with `default-src 'self'`, no `'unsafe-inline'`, 
 
 ## 11. Documentation and examples
 
-- README: what it does, quick start (banner in a few lines), choosing `ownPolicy`, the feature config, controlled vs uncontrolled, theming, API, and **Limitations**: iframes, `fetch`/WebSocket/WebRTC need `report()`, violations before `start()` are missed, `load-failed` also covers vendor outages, the Chrome unused-preload warning, extensions that hide elements without blocking them.
-- `examples/vanilla/` — one HTML page and one module.
+- README (the res-canary section of the package README, which is the npm page): what it does, quick start (banner in a few lines), choosing `ownPolicy`, the feature config, controlled vs uncontrolled, theming, API, and **Limitations**: iframes, `fetch`/WebSocket/WebRTC need `report()`, violations before `start()` are missed, `load-failed` also covers vendor outages, the Chrome unused-preload warning, extensions that hide elements without blocking them.
+- `examples/vanilla/` — a small Vite app (one HTML page and one module), run with `vp -C examples/vanilla dev`.
 - `examples/react/` — React 19: the element in controlled mode, and a custom UI via `useSyncExternalStore`. Type-checked in CI.
 - Examples are not published to npm. They use `*.example` / `*.invalid` hosts only.
 
@@ -397,13 +399,14 @@ Settled during design. Revisit only with a new reason.
 | Probe silence counts as blocked after 15 s                         | Firewalls often drop packets rather than refuse them.                                                                                                        | No timeout (a silent block is never reported).                                                                                                        |
 | Default text says "usually"                                        | The browser cannot tell a blocked request from a vendor outage.                                                                                              | "Your network is blocking…" (wrong during outages).                                                                                                   |
 | Shadow DOM + constructed stylesheet                                | Host CSS can't break the banner; works under strict CSP without `'unsafe-inline'`.                                                                           | Light DOM with classes (host CSS collisions); `<style>` in shadow root (needs `'unsafe-inline'` or a nonce).                                          |
-| Name `web-res-canary`                                              | Covers scripts, images, media, probes and WebRTC; free on npm; doubles as the element tag.                                                                   | `canary` (taken), `csp-canary` (most blocks aren't CSP), `cdn-canary` (not only CDNs), `resource-canary` (maintainer's choice was the `web-` prefix). |
+| ~~Name `web-res-canary`~~ — superseded 2026-10-01                  | Covers scripts, images, media, probes and WebRTC; free on npm; doubles as the element tag.                                                                   | `canary` (taken), `csp-canary` (most blocks aren't CSP), `cdn-canary` (not only CDNs), `resource-canary` (maintainer's choice was the `web-` prefix). |
+| Name `res-canary` inside thoro-ui (2026-10-01)                     | New reason: the canary is now the first component of a collection, so it takes the collection's `thoro-` tag prefix and `thoro-ui/<name>` entry points.      | Keeping `<web-res-canary>` as a standalone name.                                                                                                      |
 
 ## 13. Definition of done (v1)
 
 - [ ] Every unit test, the server-import check and all browser scenarios pass in Chromium, Firefox and WebKit.
 - [ ] `pnpm size` passes: core ≤ 2 KB, element ≤ 4 KB (gzip).
-- [ ] `pnpm pack` contains only `dist/`, `package.json`, `README.md` and `LICENSE`.
+- [ ] `pnpm pack` in `packages/thoro-ui` contains only `dist/`, `package.json`, `README.md` and `LICENSE`.
 - [ ] README covers everything in section 11; examples run (vanilla) and type-check (React).
 - [ ] CI is green on GitHub.
 - [ ] No private company, customer or vendor names anywhere in the repo.
