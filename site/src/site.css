@@ -1,0 +1,344 @@
+/* One stylesheet for every page. Dark by default, after the logo; light when the system asks. */
+:root {
+  color-scheme: dark light;
+  --bg: #0b0e1a;
+  --surface: #121729;
+  --text: #e6e9f5;
+  --muted: #9aa3bf;
+  --border: #232a44;
+  --link: #8fa2ff;
+  --accent: #5b74ff;
+  --wordmark: #6f84ff;
+  --code-bg: #0f1424;
+  --gradient: linear-gradient(90deg, #8be3ff, #3d5afe, #b072ff);
+  --radius: 10px;
+  --measure: 68ch;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #fbfbfe;
+    --surface: #ffffff;
+    --text: #141a2e;
+    --muted: #566079;
+    --border: #e2e5f0;
+    --link: #3047e0;
+    --accent: #3047e0;
+    --wordmark: #3047e0;
+    --code-bg: #f3f5fb;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font:
+    17px/1.6 system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+a {
+  color: var(--link);
+  text-underline-offset: 3px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+}
+
+.skip:focus {
+  top: 12px;
+  left: 16px;
+  z-index: 10;
+  padding: 6px 10px;
+  background: var(--surface);
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.brand b,
+h1 b {
+  color: var(--wordmark);
+}
+
+.top nav {
+  display: flex;
+  gap: 18px;
+  font-size: 15px;
+}
+
+main {
+  padding: 0 24px;
+}
+
+h1 {
+  line-height: 1.1;
+}
+
+h1::after {
+  display: block;
+  width: 72px;
+  height: 3px;
+  margin-top: 14px;
+  content: '';
+  background: var(--gradient);
+  border-radius: 3px;
+}
+
+h2 {
+  margin: 48px 0 8px;
+  font-size: 26px;
+}
+
+h3 {
+  margin: 28px 0 6px;
+  font-size: 19px;
+}
+
+.tldr {
+  margin: 0 0 16px;
+}
+
+/* Home */
+.home {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.hero {
+  padding: 56px 0 8px;
+  text-align: center;
+}
+
+.hero h1 {
+  margin: 12px 0 4px;
+  font-size: 44px;
+}
+
+.hero h1::after {
+  margin: 14px auto 0;
+}
+
+.lead {
+  max-width: 46ch;
+  margin: 0 auto 24px;
+  font-size: 20px;
+  color: var(--muted);
+}
+
+.card {
+  display: block;
+  padding: 18px 20px;
+  color: var(--text);
+  text-decoration: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.card:hover {
+  border-color: var(--accent);
+}
+
+.card h3 {
+  margin: 0 0 6px;
+}
+
+.card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.card .meta {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+/* Component pages */
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, var(--measure)) 200px;
+  gap: 48px;
+  justify-content: center;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.page article {
+  min-width: 0;
+  padding-bottom: 24px;
+}
+
+.page h1 {
+  margin: 40px 0 6px;
+  font-size: 40px;
+}
+
+.toc {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  margin-top: 48px;
+  font-size: 15px;
+}
+
+.toc p {
+  margin: 0 0 8px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.toc ol {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.demo {
+  padding: 18px;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.demo-controls,
+[role='tablist'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.demo-controls button,
+[role='tab'] {
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--text);
+  cursor: pointer;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.demo-controls button[aria-pressed='true'],
+[role='tab'][aria-selected='true'] {
+  border-color: var(--accent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+/* Without JavaScript the tab buttons do nothing, so they stay hidden and every panel shows. */
+[data-tabs]:not([data-ready]) [role='tablist'] {
+  display: none;
+}
+
+/* Shared */
+pre.code {
+  position: relative;
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font:
+    14px/1.55 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  text-align: left;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+pre.code .copy {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2px 10px;
+  font:
+    13px system-ui,
+    sans-serif;
+  color: var(--text);
+  cursor: pointer;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+}
+
+table {
+  width: 100%;
+  margin: 0 0 16px;
+  font-size: 15px;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.foot {
+  margin-top: 64px;
+  padding: 24px;
+  font-size: 15px;
+  color: var(--muted);
+  text-align: center;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 900px) {
+  .page {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .toc {
+    position: static;
+    order: -1;
+    margin-top: 24px;
+  }
+}

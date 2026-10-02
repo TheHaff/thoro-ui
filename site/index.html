@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Small, dependency-free web components for compliance-minded web apps." />
+    <title>thoro-ui</title>
+    <link rel="icon" href="/favicon.png" />
+    <link rel="stylesheet" href="/src/site.css" />
+    <script type="module" src="/src/main.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="top">
+      <a class="brand" href="./"
+        ><img src="/mark.png" alt="" width="36" height="31" /><span>thoro-<b>ui</b></span></a
+      >
+      <nav aria-label="Main">
+        <a href="res-canary/">res-canary</a>
+        <a href="https://github.com/TheHaff/thoro-ui">GitHub</a>
+        <a href="https://www.npmjs.com/package/thoro-ui">npm</a>
+      </nav>
+    </header>
+    <main id="main" class="home">
+      <section class="hero">
+        <img src="/mark.png" alt="" width="128" height="110" />
+        <h1>thoro-<b>ui</b></h1>
+        <p class="lead">Small, dependency-free web components for compliance-minded web apps.</p>
+        <pre class="code"><code>npm install thoro-ui</code></pre>
+      </section>
+
+      <section aria-labelledby="components">
+        <h2 id="components">Components</h2>
+        <p class="tldr"><strong>One so far. You only ship what you import.</strong></p>
+        <a class="card" href="res-canary/">
+          <h3>res-canary</h3>
+          <p>
+            Tells users when their browser or network blocks something your app needs — and gives their IT team the
+            addresses to allow.
+          </p>
+          <p class="meta">Web component · React · zero dependencies</p>
+        </a>
+      </section>
+
+      <section aria-labelledby="principles">
+        <h2 id="principles">Principles</h2>
+        <p class="tldr"><strong>Three promises every component keeps.</strong></p>
+        <ul>
+          <li><strong>Zero dependencies.</strong> Each component has a size budget, checked in CI.</li>
+          <li>
+            <strong>Strict-CSP safe.</strong> No <code>'unsafe-inline'</code>, no <code>eval</code>, Trusted Types on.
+            This site runs under that policy too.
+          </li>
+          <li><strong>Any framework, or none.</strong> Plain web components, plus native React where it helps.</li>
+        </ul>
+      </section>
+    </main>
+    <footer class="foot">
+      MIT · <a href="https://github.com/TheHaff/thoro-ui">GitHub</a> ·
+      <a href="https://www.npmjs.com/package/thoro-ui">npm</a>
+    </footer>
+  </body>
+</html>

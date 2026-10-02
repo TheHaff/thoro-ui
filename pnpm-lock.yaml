@@ -222,6 +222,16 @@ importers:
         specifier: 14.1.0
         version: 14.1.0
 
+  site:
+    dependencies:
+      thoro-ui:
+        specifier: workspace:*
+        version: link:../packages/thoro-ui
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.63.0
+        version: 1.63.0
+
 packages:
 
   '@babel/code-frame@7.29.7':
