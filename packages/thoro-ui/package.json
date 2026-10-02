@@ -21,10 +21,12 @@
   },
   "type": "module",
   "scripts": {
+    "test": "vp test",
     "test:browser": "playwright test",
     "typecheck": "tsc -p ."
   },
   "devDependencies": {
-    "@playwright/test": "1.63.0"
+    "@playwright/test": "1.63.0",
+    "happy-dom": "20.14.5"
   }
 }
