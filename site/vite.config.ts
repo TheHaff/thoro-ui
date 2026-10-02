@@ -16,8 +16,8 @@ function strictCsp(): Plugin {
   }
 }
 
+// Served from the root of thoro.dev (the repo's Pages custom domain), so Vite's default base '/' applies.
 export default defineConfig({
-  base: '/thoro-ui/',
   plugins: [strictCsp()],
   build: {
     // data: URLs would need img-src data:, which the policy doesn't allow.

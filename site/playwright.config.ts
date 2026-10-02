@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test'
 
-// Checks the built site as GitHub Pages will serve it (base /thoro-ui/). Chromium only: these guard
+// Checks the built site as thoro.dev serves it, from the root. Chromium only: these guard
 // the docs, not the package, which has its own three-engine tests.
 export default defineConfig({
   testDir: 'test',
@@ -9,7 +9,7 @@ export default defineConfig({
   use: { baseURL: 'http://localhost:4180' },
   webServer: {
     command: 'vp preview --port 4180 --strictPort',
-    url: 'http://localhost:4180/thoro-ui/',
+    url: 'http://localhost:4180/',
     reuseExistingServer: !process.env.CI,
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],

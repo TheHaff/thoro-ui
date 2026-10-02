@@ -15,7 +15,7 @@ const violations = (page: import('@playwright/test').Page): Promise<string[]> =>
   page.evaluate(() => (globalThis as { cspViolations?: string[] }).cspViolations ?? [])
 
 test('the home page loads under its strict CSP with no violations', async ({ page }) => {
-  await page.goto('/thoro-ui/')
+  await page.goto('/')
   await expect(page.locator('meta[http-equiv="Content-Security-Policy"]')).toHaveCount(1)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('thoro-ui')
   await expect(page.locator('.brand img')).toHaveJSProperty('complete', true)
@@ -24,7 +24,7 @@ test('the home page loads under its strict CSP with no violations', async ({ pag
 
 test('a Copy button copies its code block', async ({ context, page }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
-  await page.goto('/thoro-ui/')
+  await page.goto('/')
   await page.getByRole('button', { name: 'Copy' }).first().click()
   await expect(page.getByRole('button', { name: 'Copied' }).first()).toBeVisible()
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('npm install thoro-ui')
@@ -37,13 +37,13 @@ test('a refused copy says so', async ({ page }) => {
       value: { writeText: () => Promise.reject(new Error('NotAllowedError')) },
     })
   })
-  await page.goto('/thoro-ui/')
+  await page.goto('/')
   await page.getByRole('button', { name: 'Copy' }).first().click()
   await expect(page.getByRole('button', { name: 'Select and copy' }).first()).toBeVisible()
 })
 
 test('the res-canary page loads under its strict CSP with no violations', async ({ page }) => {
-  await page.goto('/thoro-ui/res-canary/')
+  await page.goto('/res-canary/')
   // Without the policy, "no violations" would prove nothing — and this page runs the real element.
   await expect(page.locator('meta[http-equiv="Content-Security-Policy"]')).toHaveCount(1)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('res-canary')
@@ -51,7 +51,7 @@ test('the res-canary page loads under its strict CSP with no violations', async 
 })
 
 test('blocking a vendor in the demo shows the real banner', async ({ page }) => {
-  await page.goto('/thoro-ui/res-canary/')
+  await page.goto('/res-canary/')
   await page.getByRole('button', { name: 'Block support chat' }).click()
   await expect(page.getByText("Some features couldn't load: Support chat.")).toBeVisible()
   await page.getByRole('button', { name: 'Block e-signature' }).click()
@@ -63,7 +63,7 @@ test('blocking a vendor in the demo shows the real banner', async ({ page }) => 
 
 // Review Focus 4
 test('quick-start tabs switch with the mouse and the arrow keys', async ({ page }) => {
-  await page.goto('/thoro-ui/res-canary/')
+  await page.goto('/res-canary/')
   const element = page.getByRole('tab', { name: 'Web component' })
   const react = page.getByRole('tab', { name: 'React' })
   await expect(page.locator('#panel-element')).toBeVisible()
@@ -79,8 +79,10 @@ test('quick-start tabs switch with the mouse and the arrow keys', async ({ page 
 // Review Focus 2
 test('on a phone, neither page scrolls sideways', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  for (const path of ['/thoro-ui/', '/thoro-ui/res-canary/']) {
+  for (const path of ['/', '/res-canary/']) {
     await page.goto(path)
+    // A missing page is narrow too: prove this one rendered before measuring it.
+    await expect(page.locator('.brand img')).toHaveJSProperty('naturalWidth', 256)
     expect(await page.evaluate(() => document.documentElement.scrollWidth), path).toBe(390)
   }
 })
@@ -106,8 +108,10 @@ const coveredBlocks = (page: import('@playwright/test').Page): Promise<number> =
 test('on a narrow screen, no Copy button covers code', async ({ page }) => {
   for (const width of [360, 390, 601, 700, 1280]) {
     await page.setViewportSize({ width, height: 844 })
-    for (const path of ['/thoro-ui/', '/thoro-ui/res-canary/']) {
+    for (const path of ['/', '/res-canary/']) {
       await page.goto(path)
+      // With no Copy buttons there would be nothing to cover.
+      await expect(page.locator('pre.code .copy').first()).toBeVisible()
       expect(await coveredBlocks(page), `${path} at ${width}px`).toBe(0)
     }
   }

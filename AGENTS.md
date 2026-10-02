@@ -24,7 +24,7 @@ packages/thoro-ui/                  the only published package
   test/unit/<name>/                 Vitest (happy-dom)
   test/browser/                     Playwright: shared fixture server, fixtures/, <name>/*.spec.ts
 examples/                           private workspace packages that use thoro-ui
-site/                               the docs site (GitHub Pages); private, built by `vp build`
+site/                               the docs site at thoro.dev (GitHub Pages); private, built by `vp build`
 docs/specs, docs/plans
 ```
 

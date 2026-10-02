@@ -2,7 +2,7 @@
 
 Small, dependency-free web components for compliance-minded web apps. Every component has its own entry point, so your bundle only carries what you import.
 
-**Docs and live demo:** <https://thehaff.github.io/thoro-ui/>
+**Docs and live demo:** <https://thoro.dev/>
 
 | component    | import                                                                            | what it does                                                                                                                                    |
 | ------------ | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |

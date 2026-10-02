@@ -1,7 +1,7 @@
 # thoro-ui docs site — design
 
 - **Status:** approved by the maintainer, 2026-10-02. Not yet implemented.
-- **Address:** `https://thehaff.github.io/thoro-ui/` (GitHub Pages, deployed from `main` by GitHub Actions).
+- **Address:** `https://thoro.dev/` — the repo's GitHub Pages site under its custom domain, deployed from `main` by GitHub Actions. Changed from `https://thehaff.github.io/thoro-ui/` on 2026-10-02, before the first deploy.
 - **Builds on:** the collection spec [`2026-10-01-thoro-ui-design.md`](2026-10-01-thoro-ui-design.md) and the component specs it links. The site documents what those specs define; it adds no behaviour to the package.
 
 ## Goal
@@ -33,9 +33,9 @@ A short, calm documentation site that a person with ADHD can scan and act on: wh
 4. Alternatives are tabs (`Web component | React`), not two long blocks.
 5. An "On this page" list stays in view; nothing is collapsed or hidden behind "read more".
 
-**Home** (`/thoro-ui/`): mark + wordmark; one line — _Small, dependency-free web components for compliance-minded web apps._; `npm install thoro-ui` with Copy; component cards (today: **res-canary**); three principles (zero dependencies · strict-CSP safe · any framework or none); footer (MIT · GitHub · npm).
+**Home** (`/`): mark + wordmark; one line — _Small, dependency-free web components for compliance-minded web apps._; `npm install thoro-ui` with Copy; component cards (today: **res-canary**); three principles (zero dependencies · strict-CSP safe · any framework or none); footer (MIT · GitHub · npm).
 
-**Component page** (`/thoro-ui/res-canary/`), in this order:
+**Component page** (`/res-canary/`), in this order:
 
 1. One-line summary.
 2. Live demo: the real `<thoro-res-canary>` from the built package, with buttons to block each of two example vendors, **Reset**, and a **Banner** toggle. Blocks are simulated with `report()`; the page makes no network requests for the demo.
@@ -52,7 +52,7 @@ Examples use `*.example` / `*.invalid` hosts only. No analytics, no third-party 
 ```
 site/                      private workspace package; depends on "thoro-ui": "workspace:*"
   package.json             scripts: dev, build, preview, test:browser
-  vite.config.ts           base '/thoro-ui/'; two HTML entries; assetsInlineLimit 0; CSP <meta> added at build
+  vite.config.ts           default base '/'; two HTML entries; assetsInlineLimit 0; CSP <meta> added at build
   playwright.config.ts     Chromium, against `vp preview`
   index.html               home
   res-canary/index.html    component page
@@ -64,11 +64,11 @@ site/                      private workspace package; depends on "thoro-ui": "wo
 ```
 
 - The site imports thoro-ui by package name, so it uses the built package. The root `pnpm build` (`vp run -r build`) builds the package before the site, because the site depends on it.
-- Links between pages are relative (`res-canary/`, `../`), because Vite rewrites asset URLs to the base path but not anchors.
+- Links between pages are relative (`res-canary/`, `../`), so they work at any base; asset URLs in HTML are root-absolute (`/mark.png`) and Vite rewrites them for the base.
 - Strict CSP: every built page gets `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; require-trusted-types-for 'script'; trusted-types 'none'` in a `<meta>` tag, added by a small build-only Vite plugin (the dev server injects inline styles and would break under it). The pages have no inline scripts or styles, and `assetsInlineLimit: 0` keeps images out of `data:` URLs.
 - Copy buttons and tabs enhance plain HTML: without JavaScript every tab panel is visible and code can be selected by hand.
 - Deploy: `.github/workflows/pages.yml` runs on pushes to `main` (and on demand): install, `pnpm build`, upload `site/dist` with `actions/upload-pages-artifact@v5`, publish with `actions/deploy-pages@v5` (permissions `pages: write`, `id-token: write`).
-- **Maintainer's one-time step:** repo Settings → Pages → Source: **GitHub Actions**.
+- **Maintainer's one-time steps:** repo Settings → Pages → Source: **GitHub Actions**, and Custom domain: `thoro.dev` (verified under the account's Pages settings) with **Enforce HTTPS**. DNS at the registrar: four `A` and four `AAAA` records on the apex for GitHub Pages, and `www` as a `CNAME` to `thehaff.github.io`. Publishing with Actions needs no `CNAME` file.
 - Checks: CI already runs `pnpm build` (now including the site) and `pnpm test:browser` (now including the site's checks). The site's Playwright checks, in Chromium against the built site: both pages load with zero CSP violations; blocking a vendor in the demo shows the real banner; a Copy button copies its code block.
 - READMEs (root and package) link to the site; the site links to GitHub and npm.
 
