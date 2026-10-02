@@ -15,7 +15,10 @@
     "lint": "vp lint",
     "test": "vp run -r test",
     "test:browser": "vp run -r test:browser",
-    "typecheck": "vp run -r typecheck"
+    "typecheck": "vp run -r typecheck",
+    "build": "vp run -r build",
+    "size": "vp run -r size",
+    "test:ssr": "vp run -r test:ssr"
   },
   "devDependencies": {
     "@types/node": "26.6.3",

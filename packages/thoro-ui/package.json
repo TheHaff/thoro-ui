@@ -19,14 +19,37 @@
     "url": "git+https://github.com/TheHaff/thoro-ui.git",
     "directory": "packages/thoro-ui"
   },
+  "files": [
+    "dist"
+  ],
   "type": "module",
+  "sideEffects": [
+    "./dist/*/element.js"
+  ],
+  "exports": {
+    "./res-canary": {
+      "types": "./dist/res-canary/index.d.ts",
+      "default": "./dist/res-canary/index.js"
+    },
+    "./res-canary/element": {
+      "types": "./dist/res-canary/element.d.ts",
+      "default": "./dist/res-canary/element.js"
+    },
+    "./package.json": "./package.json"
+  },
   "scripts": {
     "test": "vp test",
     "test:browser": "playwright test",
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "build": "vp pack",
+    "prepack": "vp pack",
+    "size": "size-limit",
+    "test:ssr": "node test/ssr.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
-    "happy-dom": "20.14.5"
+    "@size-limit/preset-small-lib": "14.1.0",
+    "happy-dom": "20.14.5",
+    "size-limit": "14.1.0"
   }
 }

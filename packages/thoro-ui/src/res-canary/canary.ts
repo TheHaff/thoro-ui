@@ -96,7 +96,7 @@ export function createCanary(options: CanaryOptions): Canary {
     },
     report(id) {
       if (!Object.hasOwn(statuses, id)) {
-        console.warn(`res-canary: report() was called with unknown feature id "${id}"`)
+        console.warn(`res-canary: unknown id "${id}"`)
         return
       }
       setStatus(id, 'load-failed')
@@ -127,9 +127,7 @@ function compile(features: readonly Feature[]): Compiled[] {
     const patterns = feature.origins.map(origin => parseOriginPattern(origin))
     const { probe } = feature
     if (probe && probe.type !== 'custom' && !patterns.some(pattern => matchesOrigin(probe.url, pattern))) {
-      throw new TypeError(
-        `res-canary: feature "${feature.id}" probes ${probe.url}, which is outside its origins, so the IT list would miss it`,
-      )
+      throw new TypeError(`res-canary: feature "${feature.id}" probes ${probe.url}, outside its origins`)
     }
     return { feature, patterns }
   })
@@ -149,7 +147,7 @@ function toPolicyMatcher(ownPolicy: CanaryOptions['ownPolicy']): (policy: string
     }
   }
   if (typeof ownPolicy === 'function') return ownPolicy
-  throw new TypeError('res-canary: ownPolicy is required (a string, RegExp or function that recognises your own CSP)')
+  throw new TypeError('res-canary: ownPolicy is required')
 }
 
 function resourceUrl(element: Element): string {

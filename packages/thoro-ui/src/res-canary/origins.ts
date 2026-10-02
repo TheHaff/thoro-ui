@@ -12,9 +12,7 @@ const ORIGIN = /^(https?|wss?):\/\/(\*\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)*)(?::(\d{1
 export function parseOriginPattern(origin: string): OriginPattern {
   const match = ORIGIN.exec(origin)
   if (!match) {
-    throw new TypeError(
-      `res-canary: invalid origin "${origin}". Use scheme://host[:port] with no path, e.g. "https://*.vendor.example".`,
-    )
+    throw new TypeError(`res-canary: invalid origin "${origin}"`)
   }
   const scheme = match[1].toLowerCase()
   return {
