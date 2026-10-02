@@ -1,15 +1,7 @@
 {
-  "name": "web-res-canary",
-  "version": "0.0.0",
-  "description": "Tell users when their browser or network blocks the third-party resources your web app depends on.",
-  "keywords": [
-    "ad-blocker",
-    "content-security-policy",
-    "csp",
-    "custom-element",
-    "firewall",
-    "web-component"
-  ],
+  "name": "thoro-ui-workspace",
+  "private": true,
+  "description": "Workspace for thoro-ui, a collection of compliance-focused web components.",
   "license": "MIT",
   "author": "Haff",
   "repository": {
@@ -21,11 +13,10 @@
     "format": "vp fmt",
     "format:check": "vp fmt --check",
     "lint": "vp lint",
-    "test:browser": "playwright test",
-    "typecheck": "tsc -p ."
+    "test:browser": "vp run -r test:browser",
+    "typecheck": "vp run -r typecheck"
   },
   "devDependencies": {
-    "@playwright/test": "1.63.0",
     "@types/node": "26.6.3",
     "typescript": "7.0.2",
     "vite-plus": "1.0.0"

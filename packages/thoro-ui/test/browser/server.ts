@@ -60,7 +60,7 @@ function pageHtml(script: string): string {
     '<html lang="en">',
     '<head>',
     '<meta charset="utf-8">',
-    '<title>web-res-canary test page</title>',
+    '<title>thoro-ui test page</title>',
     `<script type="module" src="/fixtures/${script}.js"></script>`,
     '</head>',
     '<body></body>',
@@ -92,8 +92,8 @@ createServer((req, res) => {
   }
   if (pathname === '/page') {
     const policy = POLICIES[searchParams.get('csp') ?? 'allowed']
-    const script = searchParams.get('script') ?? 'harness'
-    if (!policy || !/^[a-z-]+$/.test(script)) {
+    const script = searchParams.get('script')
+    if (!policy || !script || !/^[a-z-]+$/.test(script)) {
       res.writeHead(400).end('bad csp or script')
       return
     }
@@ -108,7 +108,7 @@ createServer((req, res) => {
     void sendFile(res, `test/browser${pathname}`)
     return
   }
-  if (pathname.startsWith('/dist/') || pathname.startsWith('/examples/')) {
+  if (pathname.startsWith('/dist/')) {
     void sendFile(res, pathname.slice(1))
     return
   }

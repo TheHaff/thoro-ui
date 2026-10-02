@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite-plus'
 
-// One config for the Vite+ toolchain: `fmt` (oxfmt) and `lint` (oxlint) here; `test` and `pack` join later.
+// Repo-wide fmt (oxfmt) and lint (oxlint). Each package's own vite.config.ts holds its test and pack blocks.
 export default defineConfig({
   fmt: {
     arrowParens: 'avoid',
@@ -21,7 +21,7 @@ export default defineConfig({
       correctness: 'error',
     },
     // Listed explicitly: without a .gitignore in effect, the import plugin walks node_modules.
-    ignorePatterns: ['dist/**', 'node_modules/**', 'playwright-report/**', 'test-results/**'],
+    ignorePatterns: ['**/dist/**', 'node_modules/**', '**/playwright-report/**', '**/test-results/**'],
     options: {
       // Type-aware rules only; `tsc -p .` stays the type checker because it also reports
       // isolatedDeclarations errors, which this path does not.

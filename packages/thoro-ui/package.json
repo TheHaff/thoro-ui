@@ -1,0 +1,30 @@
+{
+  "name": "thoro-ui",
+  "version": "0.0.0",
+  "description": "Small, dependency-free web components for compliance-minded web apps. First up: tell users when their browser or network blocks the third-party resources your app depends on.",
+  "keywords": [
+    "ad-blocker",
+    "compliance",
+    "content-security-policy",
+    "csp",
+    "custom-element",
+    "firewall",
+    "web-component",
+    "web-components"
+  ],
+  "license": "MIT",
+  "author": "Haff",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheHaff/thoro-ui.git",
+    "directory": "packages/thoro-ui"
+  },
+  "type": "module",
+  "scripts": {
+    "test:browser": "playwright test",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}
