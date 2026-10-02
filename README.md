@@ -4,9 +4,9 @@ Small, dependency-free web components for compliance-minded web apps, published 
 
 ## Components
 
-| component    | what it does                                                                                                                                    |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `res-canary` | Tells users when their browser or network blocks the third-party resources your app depends on, and gives their IT team the addresses to allow. |
+| component    | what it does                                                                                                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `res-canary` | Tells users when their browser or network blocks the third-party resources your app depends on, and gives their IT team the addresses to allow. Web component or native React. |
 
 ## Repo layout
 

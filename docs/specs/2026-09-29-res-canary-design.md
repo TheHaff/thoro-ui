@@ -1,6 +1,6 @@
 # res-canary — design
 
-- **Status:** approved 2026-09-29; updated 2026-10-01 to become a thoro-ui component; implemented 2026-10-02. A native React variant is specified separately in [`2026-10-02-res-canary-react-design.md`](2026-10-02-res-canary-react-design.md) (awaiting review).
+- **Status:** approved 2026-09-29; updated 2026-10-01 to become a thoro-ui component; implemented 2026-10-02. A native React variant is specified separately in [`2026-10-02-res-canary-react-design.md`](2026-10-02-res-canary-react-design.md) (implemented).
 - **Package:** `thoro-ui`, entries `thoro-ui/res-canary` and `thoro-ui/res-canary/element`
 - **Element:** `<thoro-res-canary>`
 - **License:** MIT

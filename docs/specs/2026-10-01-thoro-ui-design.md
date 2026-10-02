@@ -1,6 +1,6 @@
 # thoro-ui — collection design
 
-- **Status:** sections 1–4 approved 2026-10-01 and implemented 2026-10-02 with the canary. The React-variant rules (decision row, §1, §2 and §3, amended 2026-10-02) await the maintainer's review of the written text.
+- **Status:** sections 1–4 approved 2026-10-01 and implemented 2026-10-02 with the canary. The React-variant rules (amended 2026-10-02) are implemented for the canary.
 - **Package:** `thoro-ui` (npm name free as of 2026-10-01). The name is a play on "thorough".
 - **What it is:** a collection of compliance-focused web components. The first is the resource canary, specified in [`2026-09-29-res-canary-design.md`](2026-09-29-res-canary-design.md).
 - **License:** MIT

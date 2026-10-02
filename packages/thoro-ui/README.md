@@ -2,9 +2,9 @@
 
 Small, dependency-free web components for compliance-minded web apps. Every component has its own entry point, so your bundle only carries what you import.
 
-| component    | import                                               | what it does                                                                                                                                    |
-| ------------ | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `res-canary` | `thoro-ui/res-canary`, `thoro-ui/res-canary/element` | Tells users when their browser or network blocks the third-party resources your app depends on, and gives their IT team the addresses to allow. |
+| component    | import                                                                            | what it does                                                                                                                                    |
+| ------------ | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `res-canary` | `thoro-ui/res-canary`, `thoro-ui/res-canary/element`, `thoro-ui/res-canary/react` | Tells users when their browser or network blocks the third-party resources your app depends on, and gives their IT team the addresses to allow. |
 
 - **Zero dependencies.** Each component has its own size budget, enforced in CI.
 - **Works under the strictest CSP**, including Trusted Types.
@@ -106,9 +106,46 @@ Both events bubble, cross shadow boundaries and are cancelable; `preventDefault(
 
 Parts: `root`, `summary`, `title`, `details`, `list`, `origins`, `copy`, `dismiss`. `--thoro-radius` applies to the inline card only.
 
-#### React 19
+#### React
 
-React 19 supports custom elements natively. See [`examples/react/app.tsx`](https://github.com/TheHaff/thoro-ui/blob/main/examples/react/app.tsx) for controlled mode and for a fully custom UI with `useSyncExternalStore(canary.subscribe, canary.getSnapshot)`.
+`thoro-ui/res-canary/react` has native React 19 components: plain React DOM, no custom element. React is an optional peer dependency — install it in your app; nothing else in thoro-ui needs it.
+
+```tsx
+import { createCanary } from 'thoro-ui/res-canary'
+import { ResCanary } from 'thoro-ui/res-canary/react'
+import 'thoro-ui/res-canary/react.css'
+
+const canary = createCanary({ ownPolicy: 'api.example.com', features: [/* … */] })
+canary.start() // as early as possible, on the client
+
+export function Layout({ children }) {
+  return (
+    <>
+      <ResCanary canary={canary} variant="banner" />
+      {children}
+    </>
+  )
+}
+```
+
+| prop        | meaning                                                                                            |
+| ----------- | -------------------------------------------------------------------------------------------------- |
+| `canary`    | Uncontrolled: subscribes and dismisses itself.                                                     |
+| `items`     | Controlled: renders only these (`snapshot.blocked`); `canary` is ignored.                          |
+| `variant`   | `'banner'` or `'inline'` (default).                                                                |
+| `strings`   | Text overrides, same keys as the element.                                                          |
+| `lang`      | Locale for joining labels; defaults to `<html lang>`. Pass it when you render items on the server. |
+| `onDismiss` | `(ids) => void`, called when × is pressed; uncontrolled mode then dismisses the canary.            |
+| `onCopy`    | `({ text, copied }) => void`, called after **Copy for IT**.                                        |
+| `className` | Added to the root (`.thoro-res-canary`).                                                           |
+
+How it differs from the element:
+
+- **Take over state with controlled mode**, not `preventDefault()`.
+- **It renders into your page, not a shadow root.** Classes are prefixed (`.thoro-res-canary__*`), but element rules on your page such as `button { … }` apply. Skip `react.css` to style it entirely yourself; the `--thoro-*` variables work either way.
+- **The entry starts with `'use client'`**, so frameworks with React Server Components treat it as a client component.
+
+The web component works in React 19 too — see [`examples/react/app.tsx`](https://github.com/TheHaff/thoro-ui/blob/main/examples/react/app.tsx) for both the component and a fully custom UI with `useSyncExternalStore(canary.subscribe, canary.getSnapshot)`.
 
 ### API
 

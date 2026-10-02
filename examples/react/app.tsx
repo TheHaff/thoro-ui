@@ -1,17 +1,7 @@
-import { useCallback, useSyncExternalStore, type DetailedHTMLProps, type HTMLAttributes, type JSX } from 'react'
-import { createCanary, type BlockedFeature, type Canary } from 'thoro-ui/res-canary'
-import 'thoro-ui/res-canary/element'
-import type { ResCanaryElement } from 'thoro-ui/res-canary/element'
-
-declare module 'react' {
-  namespace JSX {
-    interface IntrinsicElements {
-      'thoro-res-canary': DetailedHTMLProps<HTMLAttributes<ResCanaryElement>, ResCanaryElement> & {
-        variant?: 'banner' | 'inline'
-      }
-    }
-  }
-}
+import { useSyncExternalStore, type JSX } from 'react'
+import { createCanary, type Canary } from 'thoro-ui/res-canary'
+import { ResCanary } from 'thoro-ui/res-canary/react'
+import 'thoro-ui/res-canary/react.css'
 
 // Create and start once, on the client, before any third-party script loads.
 const canary: Canary = createCanary({
@@ -28,26 +18,12 @@ const canary: Canary = createCanary({
 })
 canary.start()
 
-const NOTHING: readonly BlockedFeature[] = []
-
-/** Controlled mode: React owns the state; the element only renders it. */
-export function CanaryBanner(): JSX.Element {
-  const snapshot = useSyncExternalStore(canary.subscribe, canary.getSnapshot)
-  const items = snapshot.dismissed ? NOTHING : snapshot.blocked
-  const ref = useCallback(
-    (element: ResCanaryElement | null) => {
-      if (!element) return
-      element.items = items
-      const onDismiss = (): void => canary.dismiss()
-      element.addEventListener('res-canary-dismiss', onDismiss)
-      return () => element.removeEventListener('res-canary-dismiss', onDismiss)
-    },
-    [items],
-  )
-  return <thoro-res-canary ref={ref} variant="banner" />
+/** The drop-in banner: native React, styled by react.css. Put it at the top of your layout. */
+export function Banner(): JSX.Element {
+  return <ResCanary canary={canary} variant="banner" />
 }
 
-/** Custom UI: the core alone, no element. */
+/** Custom UI: the core alone, no component. */
 export function CanaryNotice(): JSX.Element | null {
   const { blocked, dismissed } = useSyncExternalStore(canary.subscribe, canary.getSnapshot)
   if (dismissed || blocked.length === 0) return null

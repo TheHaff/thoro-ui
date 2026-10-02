@@ -1,6 +1,6 @@
 # res-canary for React — design
 
-- **Status:** sections 1–3 approved by the maintainer in conversation, 2026-10-02. The written spec awaits the maintainer's review. Not yet implemented.
+- **Status:** approved 2026-10-02; implemented 2026-10-02.
 - **Entries:** `thoro-ui/res-canary/react` (components) and `thoro-ui/res-canary/react.css` (styles), in the existing `thoro-ui` package.
 - **Builds on:** the canary spec [`2026-09-29-res-canary-design.md`](2026-09-29-res-canary-design.md) (detection core, strings, rendered structure) and the collection spec [`2026-10-01-thoro-ui-design.md`](2026-10-01-thoro-ui-design.md) (layout, naming, theming, tooling, and the React-variant rule this component follows).
 
