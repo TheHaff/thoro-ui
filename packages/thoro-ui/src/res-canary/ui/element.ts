@@ -142,11 +142,16 @@ function createElementClass(): CustomElementConstructor {
       }
       const strings = resolveStrings(this.#strings)
       const wasOpen = this.#root.querySelector('details')?.open ?? false
+      // Rebuilding the tree would drop keyboard focus to <body>; remember the control to focus again.
+      const active = this.#root.activeElement
+      const focus =
+        active && (active.hasAttribute('part') ? `[part="${active.getAttribute('part')}"]` : active.localName)
       const parts = renderCanary(items, strings, localeOf(this))
       parts.details.open = wasOpen
       parts.copy.addEventListener('click', () => void this.#copy(items, strings, parts))
       parts.dismiss.addEventListener('click', () => this.#dismiss(items))
       this.#root.replaceChildren(parts.root)
+      if (focus) this.#root.querySelector<HTMLElement>(focus)?.focus({ preventScroll: true })
     }
 
     async #copy(items: readonly BlockedFeature[], strings: CanaryStrings, parts: RenderedCanary): Promise<void> {

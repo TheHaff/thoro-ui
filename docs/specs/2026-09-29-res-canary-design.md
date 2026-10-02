@@ -163,7 +163,7 @@ Browsers give a page no API to read its own CSP headers. The only way to tell "o
 3. `ownPolicy` matches `originalPolicy` → status `own-csp`, call `onOwnPolicyViolation`.
 4. Otherwise → status `foreign-csp`.
 
-**Element load failures** — `window.addEventListener('error', …, { capture: true })`. Resource errors do not bubble, but they pass through `window` in the capture phase. For `script`, `img`, `link`, `video`, `audio` and `source` targets, take the absolute URL (`href` for links; `currentSrc || src` for images and media; `src` otherwise), match it against `origins`, and mark the feature `load-failed`. Iframes are skipped (see Non-goals).
+**Element load failures** — `window.addEventListener('error', …, { capture: true })`. Resource errors do not bubble, but they pass through `window` in the capture phase. For `script`, `img`, `link`, `video`, `audio` and `source` targets, take the absolute URL (`href` for links; `currentSrc || src` for images and media; `src` otherwise), match it against `origins`, and mark the feature `load-failed`. Iframes are skipped (see Non-goals). Resource `error` events are not composed, so a failure inside a shadow root never reaches `window` and is not seen (verified 2026-10-02 in Chromium and WebKit); probes and `report()` cover those, and `securitypolicyviolation` events are composed, so CSP blocks there are still detected. The README lists this under Limitations.
 
 **Probes** — for each feature with a `probe`:
 

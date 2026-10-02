@@ -37,6 +37,21 @@ function part<T extends Element = HTMLElement>(element: HTMLElement, name: strin
 afterEach(() => document.body.replaceChildren())
 
 describe('<thoro-res-canary>', () => {
+  it.each([
+    ['Copy for IT', '[part="copy"]'],
+    ['the Details toggle', 'summary'],
+  ])('keeps keyboard focus on %s when the list changes', (_name, selector) => {
+    const canary = canaryWith('chat')
+    const element = mount(el => {
+      el.canary = canary
+    })
+    element.shadowRoot?.querySelector<HTMLElement>(selector)?.focus()
+    canary.report('sign')
+    const focused = element.shadowRoot?.activeElement
+    expect(focused).toBe(element.shadowRoot?.querySelector(selector))
+    expect(focused).not.toBeNull()
+  })
+
   it('stays hidden and empty until the canary has something blocked', () => {
     const canary = canaryWith()
     const element = mount(el => {

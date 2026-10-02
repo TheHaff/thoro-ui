@@ -128,6 +128,7 @@ Options: `features`, `ownPolicy` (required), `onChange`, `onOwnPolicyViolation`,
 ### Limitations
 
 - **Iframes:** browsers don't report iframe load failures reliably, so they aren't detected.
+- **Resources loaded inside a shadow root** (a vendor widget or an app built from web components): their load `error` events never reach the page, so a dropped request there isn't seen. Give the feature a probe or call `canary.report(id)`. CSP blocks inside a shadow root are still detected.
 - **`fetch`, XHR, WebSocket, WebRTC:** not detected automatically — call `canary.report(id)` from your error handling.
 - **Before `start()`:** violations that happened earlier are missed. Probes still catch a blocked host.
 - **`load-failed` includes vendor outages.** The default text says "usually" for that reason.
