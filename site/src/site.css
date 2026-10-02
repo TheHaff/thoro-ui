@@ -350,3 +350,11 @@ th {
     white-space: nowrap;
   }
 }
+
+/* On narrow screens a long first line would run under the Copy button (and scroll with it), so
+   the button gets a row of its own. */
+@media (max-width: 600px) {
+  pre.code {
+    padding-top: 40px;
+  }
+}

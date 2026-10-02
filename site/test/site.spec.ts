@@ -44,6 +44,8 @@ test('a refused copy says so', async ({ page }) => {
 
 test('the res-canary page loads under its strict CSP with no violations', async ({ page }) => {
   await page.goto('/thoro-ui/res-canary/')
+  // Without the policy, "no violations" would prove nothing — and this page runs the real element.
+  await expect(page.locator('meta[http-equiv="Content-Security-Policy"]')).toHaveCount(1)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('res-canary')
   expect(await violations(page)).toEqual([])
 })
@@ -80,5 +82,33 @@ test('on a phone, neither page scrolls sideways', async ({ page }) => {
   for (const path of ['/thoro-ui/', '/thoro-ui/res-canary/']) {
     await page.goto(path)
     expect(await page.evaluate(() => document.documentElement.scrollWidth), path).toBe(390)
+  }
+})
+
+// Counts the visible code blocks whose first line runs under their Copy button.
+const coveredBlocks = (page: import('@playwright/test').Page): Promise<number> =>
+  page.evaluate(
+    () =>
+      [...document.querySelectorAll('pre.code')].filter(pre => {
+        const text = pre.querySelector('code')?.firstChild
+        const button = pre.querySelector('.copy')
+        if (!text || !button || pre.getClientRects().length === 0) return false
+        const content = text.textContent ?? ''
+        const range = document.createRange()
+        range.setStart(text, 0)
+        range.setEnd(text, content.includes('\n') ? content.indexOf('\n') : content.length)
+        const line = range.getBoundingClientRect()
+        const box = button.getBoundingClientRect()
+        return line.right > box.left && line.left < box.right && line.bottom > box.top && line.top < box.bottom
+      }).length,
+  )
+
+test('on a narrow screen, no Copy button covers code', async ({ page }) => {
+  for (const width of [360, 390, 601, 700, 1280]) {
+    await page.setViewportSize({ width, height: 844 })
+    for (const path of ['/thoro-ui/', '/thoro-ui/res-canary/']) {
+      await page.goto(path)
+      expect(await coveredBlocks(page), `${path} at ${width}px`).toBe(0)
+    }
   }
 })
