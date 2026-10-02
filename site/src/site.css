@@ -342,3 +342,11 @@ th {
     margin-top: 24px;
   }
 }
+
+/* Names like load-failed stay on one line where there's room. Phones get normal wrapping, and the
+   long names carry <wbr> break points, so a table never pushes past the screen. */
+@media (min-width: 601px) {
+  td code {
+    white-space: nowrap;
+  }
+}

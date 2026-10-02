@@ -25,6 +25,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         home: resolve(import.meta.dirname, 'index.html'),
+        'res-canary': resolve(import.meta.dirname, 'res-canary/index.html'),
       },
     },
   },

@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="res-canary tells users when their browser or network blocks something your web app needs, and gives their IT team the addresses to allow."
+    />
+    <title>res-canary · thoro-ui</title>
+    <link rel="icon" href="/favicon.png" />
+    <link rel="stylesheet" href="/src/site.css" />
+    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/demo.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="top">
+      <a class="brand" href="../"
+        ><img src="/mark.png" alt="" width="36" height="31" /><span>thoro-<b>ui</b></span></a
+      >
+      <nav aria-label="Main">
+        <a href="./" aria-current="page">res-canary</a>
+        <a href="https://github.com/TheHaff/thoro-ui">GitHub</a>
+        <a href="https://www.npmjs.com/package/thoro-ui">npm</a>
+      </nav>
+    </header>
+    <main id="main" class="page">
+      <article>
+        <h1>res-canary</h1>
+        <p>
+          <strong
+            >Tells users when their browser or network blocks something your app needs — and gives their IT team the
+            addresses to allow.</strong
+          >
+        </p>
+        <p>
+          Your own CSP allows your vendors. A browser extension, a corporate proxy or a firewall may not. Nothing tells
+          your app, so the user just sees a missing chat bubble.
+        </p>
+
+        <section aria-labelledby="try">
+          <h2 id="try">Try it</h2>
+          <p class="tldr">
+            <strong>Block a vendor and watch the real banner appear.</strong> Nothing is really blocked: the buttons
+            call <code>report()</code>.
+          </p>
+          <div class="demo">
+            <div class="demo-controls">
+              <button type="button" data-block="chat">Block support chat</button>
+              <button type="button" data-block="sign">Block e-signature</button>
+              <button type="button" id="demo-variant" aria-pressed="false">Banner style</button>
+              <button type="button" id="demo-reset">Reset</button>
+            </div>
+            <thoro-res-canary id="demo-banner"></thoro-res-canary>
+          </div>
+        </section>
+
+        <section aria-labelledby="start">
+          <h2 id="start">Quick start</h2>
+          <p class="tldr">
+            <strong
+              >Install, list your vendors, and call <code>start()</code> before any third-party script loads.</strong
+            >
+          </p>
+          <pre class="code"><code>npm install thoro-ui</code></pre>
+          <div data-tabs>
+            <div role="tablist" aria-label="Quick start">
+              <button type="button" role="tab" id="tab-element" aria-controls="panel-element">Web component</button>
+              <button type="button" role="tab" id="tab-react" aria-controls="panel-react">React</button>
+            </div>
+            <div role="tabpanel" id="panel-element" aria-labelledby="tab-element">
+              <pre class="code"><code>import { createCanary } from 'thoro-ui/res-canary'
+import { mountBanner } from 'thoro-ui/res-canary/element'
+
+const canary = createCanary({
+  ownPolicy: 'api.app.example', // any text unique to your own CSP
+  features: [
+    {
+      id: 'chat',
+      label: 'Support chat',
+      impact: "The support chat bubble won't appear.",
+      origins: ['https://widget.chat.example'],
+      probe: { type: 'script', url: 'https://widget.chat.example/loader.js' },
+    },
+  ],
+})
+
+canary.start()
+mountBanner(canary)</code></pre>
+            </div>
+            <div role="tabpanel" id="panel-react" aria-labelledby="tab-react">
+              <pre class="code"><code>import { createCanary } from 'thoro-ui/res-canary'
+import { ResCanary } from 'thoro-ui/res-canary/react'
+import 'thoro-ui/res-canary/react.css'
+
+const canary = createCanary({ ownPolicy: 'api.app.example', features: [/* as in the Web component tab */] })
+canary.start()
+
+export function Layout({ children }) {
+  return (
+    &lt;&gt;
+      &lt;ResCanary canary={canary} variant="banner" /&gt;
+      {children}
+    &lt;/&gt;
+  )
+}</code></pre>
+              <p>
+                React 19 is an optional peer dependency. The component renders plain React DOM, so your page's CSS can
+                reach it; skip <code>react.css</code> to style it yourself.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="how">
+          <h2 id="how">How it works</h2>
+          <p class="tldr">
+            <strong>Five signals; the most specific one wins.</strong> A status only moves up, so the order events
+            arrive in doesn't matter.
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Signal</th>
+                <th>Status</th>
+                <th>Shown?</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>A CSP block from a policy that isn't yours (extension, proxy)</td>
+                <td><code>foreign-csp</code></td>
+                <td>yes</td>
+              </tr>
+              <tr>
+                <td>
+                  A <code>&lt;script&gt;</code>, <code>&lt;img&gt;</code>, <code>&lt;link&gt;</code>,
+                  <code>&lt;video&gt;</code>, <code>&lt;audio&gt;</code> or <code>&lt;source&gt;</code> fails
+                </td>
+                <td><code>load-failed</code></td>
+                <td>yes</td>
+              </tr>
+              <tr>
+                <td>A startup probe fails or goes silent</td>
+                <td><code>load-failed</code></td>
+                <td>yes</td>
+              </tr>
+              <tr>
+                <td>
+                  You call <code>canary.<wbr />report(id)</code> (fetch, WebSocket, WebRTC…)
+                </td>
+                <td><code>load-failed</code></td>
+                <td>yes</td>
+              </tr>
+              <tr>
+                <td>A CSP block from <em>your own</em> policy</td>
+                <td><code>own-csp</code></td>
+                <td>
+                  no — it's your bug, so <code>onOwnPolicy<wbr />Violation</code> is called
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section aria-labelledby="reference">
+          <h2 id="reference">Reference</h2>
+          <p class="tldr"><strong>Everything you can pass in, in four small tables.</strong></p>
+
+          <h3>createCanary options</h3>
+          <table>
+            <tbody>
+              <tr>
+                <td><code>features</code></td>
+                <td>What you load from where (next table).</td>
+              </tr>
+              <tr>
+                <td><code>ownPolicy</code></td>
+                <td>Required. Text, RegExp or function that recognises your own CSP.</td>
+              </tr>
+              <tr>
+                <td>
+                  <code>onChange</code>, <code>onOwnPolicy<wbr />Violation</code>
+                </td>
+                <td>Callbacks for your telemetry.</td>
+              </tr>
+              <tr>
+                <td><code>storage</code>, <code>storageKey</code></td>
+                <td>
+                  Where dismissal is remembered. Default <code>localStorage</code>; <code>null</code> = this page only.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <code>probeTimeout<wbr />Ms</code>
+                </td>
+                <td>Silence that counts as blocked. Default <code>15000</code>; <code>0</code> turns it off.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>Each feature</h3>
+          <table>
+            <tbody>
+              <tr>
+                <td><code>id</code>, <code>label</code>, <code>impact</code></td>
+                <td>Stable id, short name, one sentence on what won't work.</td>
+              </tr>
+              <tr>
+                <td><code>origins</code></td>
+                <td>
+                  CSP host-sources such as <code>https://*.vendor.example</code>. Also the list IT is asked to allow.
+                </td>
+              </tr>
+              <tr>
+                <td><code>probe</code></td>
+                <td>
+                  Optional startup check: <code>script</code>, <code>style</code>, <code>image</code>,
+                  <code>fetch</code> or <code>custom</code>.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>Web component</h3>
+          <table>
+            <tbody>
+              <tr>
+                <td><code>canary</code> / <code>items</code></td>
+                <td>Uncontrolled (it dismisses itself) or controlled (you own the state).</td>
+              </tr>
+              <tr>
+                <td><code>variant</code></td>
+                <td><code>"banner"</code> (full width) or <code>"inline"</code> (card, default).</td>
+              </tr>
+              <tr>
+                <td><code>strings</code></td>
+                <td>Override any text, for translations.</td>
+              </tr>
+              <tr>
+                <td>events</td>
+                <td>
+                  <code>res-canary-dismiss</code> and <code>res-canary-copy</code>; <code>preventDefault()</code> stops
+                  the uncontrolled dismiss.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>React</h3>
+          <table>
+            <tbody>
+              <tr>
+                <td><code>canary</code> / <code>items</code></td>
+                <td>Same two modes as the element.</td>
+              </tr>
+              <tr>
+                <td><code>variant</code>, <code>strings</code>, <code>className</code></td>
+                <td>Same as the element, plus a class on the root.</td>
+              </tr>
+              <tr>
+                <td><code>lang</code></td>
+                <td>Locale for joining labels; pass it when you render on a server.</td>
+              </tr>
+              <tr>
+                <td><code>onDismiss</code>, <code>onCopy</code></td>
+                <td>Called when × or <strong>Copy for IT</strong> is pressed.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>Theming</h3>
+          <p>
+            Set <code>--thoro-bg</code>, <code>--thoro-fg</code>, <code>--thoro-border</code>,
+            <code>--thoro-accent</code>, <code>--thoro-radius</code> or <code>--thoro-font</code> on
+            <code>:root</code> for every component, or on one component.
+          </p>
+          <pre class="code"><code>:root {
+  --thoro-accent: #c2410c;
+}
+thoro-res-canary,
+.thoro-res-canary {
+  --thoro-bg: #fff7ed;
+}</code></pre>
+        </section>
+
+        <section aria-labelledby="limits">
+          <h2 id="limits">Limits</h2>
+          <p class="tldr"><strong>What it can't see, and what to know.</strong></p>
+          <h3>Not detected</h3>
+          <ul>
+            <li>Iframes — browsers don't report their load failures reliably.</li>
+            <li>Resources inside a shadow root — use a probe or <code>report()</code>.</li>
+            <li><code>fetch</code>, XHR, WebSocket, WebRTC — call <code>report(id)</code> from your error handling.</li>
+            <li>An extension that hides an element without blocking its request.</li>
+          </ul>
+          <h3>Good to know</h3>
+          <ul>
+            <li>Call <code>start()</code> early: blocks before it are missed (probes still catch them).</li>
+            <li><code>load-failed</code> also covers vendor outages, so the default text says "usually".</li>
+            <li>
+              Chrome logs an "unused preload" warning for <code>script</code> and <code>style</code> probes; a
+              <code>fetch</code> probe avoids it.
+            </li>
+          </ul>
+        </section>
+      </article>
+
+      <nav class="toc" aria-label="On this page">
+        <p>On this page</p>
+        <ol>
+          <li><a href="#try">Try it</a></li>
+          <li><a href="#start">Quick start</a></li>
+          <li><a href="#how">How it works</a></li>
+          <li><a href="#reference">Reference</a></li>
+          <li><a href="#limits">Limits</a></li>
+        </ol>
+      </nav>
+    </main>
+    <footer class="foot">
+      MIT · <a href="https://github.com/TheHaff/thoro-ui">GitHub</a> ·
+      <a href="https://www.npmjs.com/package/thoro-ui">npm</a>
+    </footer>
+  </body>
+</html>
