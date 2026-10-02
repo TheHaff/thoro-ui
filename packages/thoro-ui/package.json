@@ -39,7 +39,7 @@
   },
   "scripts": {
     "test": "vp test",
-    "test:browser": "playwright test",
+    "test:browser": "vp pack && playwright test",
     "typecheck": "tsc -p .",
     "build": "vp pack",
     "prepack": "vp pack",
