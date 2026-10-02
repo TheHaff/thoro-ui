@@ -3,5 +3,5 @@
   "compilerOptions": {
     "types": ["node", "vite-plus/test/globals"]
   },
-  "include": ["src", "test"]
+  "include": ["src", "test", "scripts"]
 }

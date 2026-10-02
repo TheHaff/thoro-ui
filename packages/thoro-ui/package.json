@@ -24,7 +24,8 @@
   ],
   "type": "module",
   "sideEffects": [
-    "./dist/*/element.js"
+    "./dist/*/element.js",
+    "./dist/*/*.css"
   ],
   "exports": {
     "./res-canary": {
@@ -35,14 +36,15 @@
       "types": "./dist/res-canary/element.d.ts",
       "default": "./dist/res-canary/element.js"
     },
+    "./res-canary/react.css": "./dist/res-canary/react.css",
     "./package.json": "./package.json"
   },
   "scripts": {
     "test": "vp test",
-    "test:browser": "vp pack && playwright test",
+    "test:browser": "pnpm run build && playwright test",
     "typecheck": "tsc -p .",
-    "build": "vp pack",
-    "prepack": "vp pack",
+    "build": "vp pack && node scripts/build-react-css.ts",
+    "prepack": "pnpm run build",
     "size": "size-limit",
     "test:ssr": "node test/ssr.ts"
   },
