@@ -45,12 +45,13 @@
   },
   "scripts": {
     "test": "vp test",
-    "test:browser": "pnpm run build && playwright test",
+    "test:browser": "pnpm run build && pnpm run build:fixtures && playwright test",
     "typecheck": "tsc -p .",
     "build": "vp pack && node scripts/build-react-css.ts",
     "prepack": "pnpm run build",
     "size": "size-limit",
-    "test:ssr": "node test/ssr.ts"
+    "test:ssr": "node test/ssr.ts",
+    "build:fixtures": "vp build --config vite.fixtures.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

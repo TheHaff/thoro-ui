@@ -12,6 +12,7 @@ declare global {
     bannerText(): string | null
     bannerPadding(): string | null
   }
+  var reactHarness: { bannerText(): string | null; rootPadding(): string | null; violations: string[] }
   var sheetCheck: { paddingLeft(): string; violations: string[] }
 }
 
