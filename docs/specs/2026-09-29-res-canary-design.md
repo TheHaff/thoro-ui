@@ -111,12 +111,12 @@ type CanaryOptions = {
 }
 
 type Canary = {
-  start(): void
-  stop(): void
-  report(id: string): void
-  dismiss(): void
-  subscribe(listener: () => void): () => void
-  getSnapshot(): Snapshot
+  start: () => void
+  stop: () => void
+  report: (id: string) => void
+  dismiss: () => void
+  subscribe: (listener: () => void) => () => void
+  getSnapshot: () => Snapshot
 }
 ```
 
@@ -140,7 +140,7 @@ canary.getSnapshot() // stable reference until something changes
 - a missing or empty `ownPolicy` (an empty string would match every policy);
 - a probe URL outside its feature's `origins` (the IT list would then be missing the probed host).
 
-The returned methods do not use `this`, so `canary.subscribe` and `canary.getSnapshot` can be passed around unbound (as `useSyncExternalStore` does).
+The returned methods do not use `this`, so `canary.subscribe` and `canary.getSnapshot` can be passed around unbound (as `useSyncExternalStore` does). The `Canary` type declares them as function-typed properties rather than methods so that type-aware linters (such as the `unbound-method` rule) agree.
 
 `report()` with an unknown id (including inherited names such as `toString`) logs one `console.warn` and does nothing else.
 

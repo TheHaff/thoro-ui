@@ -50,11 +50,13 @@ export type CanaryOptions = {
   probeTimeoutMs?: number
 }
 
+// Function-typed properties, not methods: none of them uses `this`, so they can be passed around
+// unbound (useSyncExternalStore does), and type-aware linters such as unbound-method agree.
 export type Canary = {
-  dismiss(): void
-  getSnapshot(): Snapshot
-  report(id: string): void
-  start(): void
-  stop(): void
-  subscribe(listener: () => void): () => void
+  dismiss: () => void
+  getSnapshot: () => Snapshot
+  report: (id: string) => void
+  start: () => void
+  stop: () => void
+  subscribe: (listener: () => void) => () => void
 }
