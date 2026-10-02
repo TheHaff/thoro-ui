@@ -1,0 +1,11 @@
+{
+  "name": "example-vanilla",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vp dev"
+  },
+  "dependencies": {
+    "thoro-ui": "workspace:*"
+  }
+}

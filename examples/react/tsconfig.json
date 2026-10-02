@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "declaration": false,
+    "isolatedDeclarations": false,
+    "jsx": "react-jsx",
+    "paths": {
+      "thoro-ui/res-canary": ["../../packages/thoro-ui/src/res-canary/index.ts"],
+      "thoro-ui/res-canary/element": ["../../packages/thoro-ui/src/res-canary/element.ts"]
+    },
+    "types": []
+  },
+  "include": ["app.tsx"]
+}
