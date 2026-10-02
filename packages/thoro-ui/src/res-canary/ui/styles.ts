@@ -1,4 +1,5 @@
-const CSS = `
+/** The element's stylesheet. Class-only selectors (plus :host), so scripts/react-css.ts can derive react.css. */
+export const CANARY_CSS: string = `
 :host {
   --_bg: var(--thoro-bg, #fffbeb);
   --_fg: var(--thoro-fg, #422006);
@@ -44,24 +45,25 @@ const CSS = `
 .body {
   min-width: 0;
 }
-p {
+.summary,
+.ask {
   margin: 0;
 }
 .title {
   font-weight: 600;
 }
-details {
+.details {
   margin-top: 6px;
 }
-summary {
+.toggle {
   width: fit-content;
   cursor: pointer;
 }
-ul {
+.list {
   margin: 8px 0;
   padding-left: 20px;
 }
-pre {
+.origins {
   margin: 6px 0 8px;
   padding: 8px;
   overflow-x: auto;
@@ -69,7 +71,7 @@ pre {
   background: color-mix(in srgb, var(--_fg) 6%, transparent);
   border-radius: 4px;
 }
-button {
+.button {
   font: inherit;
   color: inherit;
   cursor: pointer;
@@ -91,8 +93,8 @@ button {
   border: 0;
   border-radius: 6px;
 }
-button:focus-visible,
-summary:focus-visible {
+.button:focus-visible,
+.toggle:focus-visible {
   outline: 2px solid var(--_accent);
   outline-offset: 2px;
 }
@@ -112,7 +114,7 @@ let sheet: CSSStyleSheet | undefined
 export function canarySheet(): CSSStyleSheet {
   if (!sheet) {
     sheet = new CSSStyleSheet()
-    sheet.replaceSync(CSS)
+    sheet.replaceSync(CANARY_CSS)
   }
   return sheet
 }

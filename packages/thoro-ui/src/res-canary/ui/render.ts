@@ -42,18 +42,22 @@ export function renderCanary(
     strings.cause,
     announce,
   )
-  const origins = h('pre', { part: 'origins' }, originsText(items))
-  const copy = h('button', { class: 'copy', part: 'copy', type: 'button' }, strings.copy)
+  const origins = h('pre', { class: 'origins', part: 'origins' }, originsText(items))
+  const copy = h('button', { class: 'button copy', part: 'copy', type: 'button' }, strings.copy)
   const details = h(
     'details',
-    { part: 'details' },
-    h('summary', {}, strings.details),
-    h('ul', { part: 'list' }, ...items.map(item => h('li', {}, `${item.label} — ${item.impact}`))),
-    h('p', {}, strings.itAsk),
+    { class: 'details', part: 'details' },
+    h('summary', { class: 'toggle' }, strings.details),
+    h('ul', { class: 'list', part: 'list' }, ...items.map(item => h('li', {}, `${item.label} — ${item.impact}`))),
+    h('p', { class: 'ask' }, strings.itAsk),
     origins,
     copy,
   )
-  const dismiss = h('button', { 'aria-label': strings.dismiss, class: 'dismiss', part: 'dismiss', type: 'button' }, '×')
+  const dismiss = h(
+    'button',
+    { 'aria-label': strings.dismiss, class: 'button dismiss', part: 'dismiss', type: 'button' },
+    '×',
+  )
   const root = h(
     'div',
     { 'aria-label': strings.title, class: 'root', part: 'root', role: 'region' },
