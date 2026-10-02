@@ -20,6 +20,17 @@ describe('reactCss', () => {
     expect(classes.filter(name => name !== 'thoro-res-canary' && !/^thoro-res-canary(__|--)/.test(name))).toEqual([])
   })
 
+  it('rewrites classes in selectors only, never dots inside values', () => {
+    const source = ".icon {\n  background: url(warning.svg);\n  content: 'see docs.example';\n}\n"
+    expect(reactCss(source, 'blk')).toBe(
+      ".blk__icon {\n  background: url(warning.svg);\n  content: 'see docs.example';\n}\n",
+    )
+  })
+
+  it('drops the hidden rule however it is spaced', () => {
+    expect(reactCss(':host([hidden]){display:none}\n.root {\n}\n', 'blk')).toBe('.blk__root {\n}\n')
+  })
+
   it('keeps the theme variables and the dark-mode block', () => {
     expect(css).toContain('--_bg: var(--thoro-bg, #fffbeb);')
     expect(css).toContain('@media (prefers-color-scheme: dark) {\n  .thoro-res-canary {')

@@ -29,10 +29,13 @@ export function ResCanary(props: ResCanaryProps): ReactElement | null {
   const { canary, className, items, lang, onCopy, onDismiss, strings: overrides, variant = 'inline' } = props
   // Controlled mode ignores the canary entirely, so it doesn't even subscribe.
   const source = items === undefined ? canary : undefined
+  // The server snapshot is always empty: a block can reach the canary while the HTML is still parsing,
+  // so hydrating with the live snapshot would not match the server's markup. React re-renders with the
+  // live snapshot straight after hydrating.
   const snapshot = useSyncExternalStore<Snapshot | undefined>(
     source?.subscribe ?? noSubscription,
     source?.getSnapshot ?? noSnapshot,
-    source?.getSnapshot ?? noSnapshot,
+    noSnapshot,
   )
   const origins = useRef<HTMLPreElement>(null)
   // The text that was last copied: "Copied" shows only while the list still produces that text.

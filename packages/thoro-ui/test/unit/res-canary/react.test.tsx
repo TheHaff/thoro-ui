@@ -221,6 +221,18 @@ describe('<ResCanary>', () => {
     expect(errors).not.toHaveBeenCalled()
   })
 
+  // Final review: a foreign-CSP violation during HTML parsing reaches the canary before React hydrates.
+  it('hydrates over empty server markup when the canary detected a block before hydration', () => {
+    host.innerHTML = renderToString(<ResCanary canary={canaryWith()} />)
+    const canary = canaryWith('chat')
+    const onRecoverableError = vi.fn()
+    act(() => {
+      root = hydrateRoot(host, <ResCanary canary={canary} />, { onRecoverableError })
+    })
+    expect(onRecoverableError).not.toHaveBeenCalled()
+    expect(part('title')?.textContent).toBe("Some features couldn't load: Support chat.")
+  })
+
   // Review Focus 1
   it('hydrates server-rendered markup without a mismatch', () => {
     const items = canaryWith('chat').getSnapshot().blocked
