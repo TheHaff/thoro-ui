@@ -1,17 +1,18 @@
 # thoro-ui — collection design
 
-- **Status:** sections 1–4 approved by the maintainer in conversation, 2026-10-01. The written spec awaits the maintainer's review. Not yet implemented.
+- **Status:** sections 1–4 approved 2026-10-01 and implemented 2026-10-02 with the canary. The React-variant rules (decision row, §1, §2 and §3, amended 2026-10-02) await the maintainer's review of the written text.
 - **Package:** `thoro-ui` (npm name free as of 2026-10-01). The name is a play on "thorough".
 - **What it is:** a collection of compliance-focused web components. The first is the resource canary, specified in [`2026-09-29-res-canary-design.md`](2026-09-29-res-canary-design.md).
 - **License:** MIT
 
 ## Decisions so far
 
-| decision                                                   | why                                                                                                                        | rejected                                                                                                                                                                                    |
-| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| pnpm workspace that publishes **one** package, `thoro-ui`  | One version and one release for consumers; examples and a later docs site get their own dependencies inside the workspace. | A single package at the repo root (examples' React deps would sit in the library); a package per component (release overhead, a shared base becomes a runtime dependency or is duplicated). |
-| `thoro-` prefix for tags, CSS variables and storage keys   | Components in one collection read as one family and never collide with other libraries' tags.                              | Keeping `<web-res-canary>` with per-component prefixes.                                                                                                                                     |
-| This round covers collection conventions + the canary only | Shared code is extracted when a second component needs it, not guessed in advance.                                         | Sketching the next components now.                                                                                                                                                          |
+| decision                                                        | why                                                                                                                                                                        | rejected                                                                                                                                                                                    |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| pnpm workspace that publishes **one** package, `thoro-ui`       | One version and one release for consumers; examples and a later docs site get their own dependencies inside the workspace.                                                 | A single package at the repo root (examples' React deps would sit in the library); a package per component (release overhead, a shared base becomes a runtime dependency or is duplicated). |
+| `thoro-` prefix for tags, CSS variables and storage keys        | Components in one collection read as one family and never collide with other libraries' tags.                                                                              | Keeping `<web-res-canary>` with per-component prefixes.                                                                                                                                     |
+| This round covers collection conventions + the canary only      | Shared code is extracted when a second component needs it, not guessed in advance.                                                                                         | Sketching the next components now.                                                                                                                                                          |
+| Optional native React variants as separate entries (2026-10-02) | React users get a native choice; everyone else never installs or ships React. Details in [`2026-10-02-res-canary-react-design.md`](2026-10-02-res-canary-react-design.md). | Wrappers around the element; hooks only; runtime-injected CSS; supporting React 18.                                                                                                         |
 
 ## 1. Repo layout and packaging (approved)
 
@@ -42,13 +43,18 @@ Exports — one entry per component, no root entry:
 "exports": {
   "./res-canary":         { "types": "./dist/res-canary/index.d.ts",   "default": "./dist/res-canary/index.js" },
   "./res-canary/element": { "types": "./dist/res-canary/element.d.ts", "default": "./dist/res-canary/element.js" },
+  "./res-canary/react":   { "types": "./dist/res-canary/react.d.ts",   "default": "./dist/res-canary/react.js" },
+  "./res-canary/react.css": "./dist/res-canary/react.css",
   "./package.json": "./package.json"
 },
-"sideEffects": ["./dist/*/element.js"]
+"sideEffects": ["./dist/*/element.js", "./dist/*/*.css"],
+"peerDependencies": { "react": "^19.0.0" },
+"peerDependenciesMeta": { "react": { "optional": true } }
 ```
 
 - No barrel: importing `thoro-ui` alone gives nothing, so the whole collection is never pulled in by accident.
-- Only `*/element.js` files have side effects (they register the tag); every core entry is pure.
+- Only `*/element.js` files (they register the tag) and the CSS files have side effects; every core entry and every React entry is pure.
+- React is an optional peer: only the `/react` entries import it (added 2026-10-02, §2).
 - Shared internals (`src/shared/`, created when a second component needs one) become shared chunks that load only if an imported entry uses them.
 - Size budgets stay per entry: canary core ≤ 2 KB, element ≤ 4 KB gzip.
 - **To verify in the first implementation task:** `vp pack` writes nested entries as `dist/res-canary/index.js`, not as a flattened name.
@@ -75,7 +81,16 @@ Events use the component name rather than a shared `thoro-<action>`, because Typ
 
 **Text:** every component takes a `strings` property, a partial override of its English defaults. It formats lists for the nearest `lang` attribute and falls back to English when the `lang` value is invalid.
 
-**Carried over from the canary spec, for every component:** zero runtime dependencies; strict CSP and Trusted Types safe (canary spec §8); nothing touches `window`, `document` or `customElements` at import time; native controls, never steals focus, respects `prefers-reduced-motion`; a size budget set in the component's own spec and enforced in CI.
+**React variants (optional per component, added 2026-10-02).** A component may also ship native React components:
+
+- entries `thoro-ui/<name>/react` and `thoro-ui/<name>/react.css`; the React entry starts with `'use client'`;
+- native React DOM, no custom element; classes `thoro-<name>` on the root, `thoro-<name>--<variant>` for variants, `thoro-<name>__<class>` inside, one for each class in the element's CSS;
+- React `^19` as an optional peer dependency, imported by `/react` entries only;
+- `react.css` is generated from the element's CSS, so element CSS uses class-only selectors (plus `:host` rules); a unit test pins that the React markup and the CSS use the same classes;
+- the same core, strings and structure as the element; differences forced by React (no `preventDefault`, `lang` as a prop) are listed in the component's React spec;
+- its own size budget, measured without React.
+
+**Carried over from the canary spec, for every component:** zero runtime dependencies (React is an optional peer, only for `/react` entries); strict CSP and Trusted Types safe (canary spec §8); nothing touches `window`, `document` or `customElements` at import time; native controls, never steals focus, respects `prefers-reduced-motion`; a size budget set in the component's own spec and enforced in CI.
 
 **Shared code** goes into `src/shared/` only when a second component needs it.
 
@@ -89,7 +104,7 @@ thoro-ui/
 ├─ tsconfig.base.json    shared compiler options (strict, isolatedDeclarations, …)
 ├─ .node-version (24)  .gitignore
 ├─ packages/thoro-ui/
-│  ├─ package.json       devDeps: @playwright/test, happy-dom, size-limit (+ preset)
+│  ├─ package.json       devDeps: @playwright/test, happy-dom, size-limit (+ preset), react, react-dom (+ types)
 │  ├─ vite.config.ts     test + pack
 │  ├─ tsconfig.json      extends ../../tsconfig.base.json
 │  ├─ playwright.config.ts  .size-limit.json
@@ -104,6 +119,7 @@ thoro-ui/
 - **Root scripts keep the AGENTS.md names.** `lint`, `format` and `format:check` run once at the root. `typecheck`, `test`, `build`, `size`, `test:ssr` and `test:browser` run as `vp run -r <name>` in every package that defines them. Vite+ does not cache `package.json` scripts by default, so results are never replayed.
 - **Playwright, size-limit and the server-import check live in `packages/thoro-ui`**, because they test the built package; the fixture server serves that package's `dist/`.
 - **The package keeps its own README (the npm page) and a copy of LICENSE**; the root README is a short repo overview.
+- **React variants** (added 2026-10-02): the package tsconfig sets `jsx: react-jsx`; Vitest also runs `*.test.tsx`; the root lint config turns on oxlint's React rules for `.tsx` files through `lint.overrides`; the build writes each `react.css` from the element's CSS after `vp pack`; `test:browser` first bundles a small React fixture (git-ignored) for the strict-CSP scenario. React itself is a dev dependency of the package and a peer for consumers — never a dependency.
 - **CI:** one job from the root — install, format check, lint, typecheck, test, build, size, server-import check, browsers.
 - **To verify in the first implementation task:** `packages/thoro-ui/vite.config.ts` can import `vite-plus` from the root install, and `vp` resolves inside package scripts.
 
