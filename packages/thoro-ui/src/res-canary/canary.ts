@@ -1,5 +1,6 @@
 import { createDismissalStore } from './dismissal.ts'
 import { matchesOrigin, parseOriginPattern, type OriginPattern } from './origins.ts'
+import { runProbe } from './probes.ts'
 import { blockedFeatures, raiseStatus, signatureOf } from './status.ts'
 import type { Canary, CanaryOptions, Feature, Snapshot, Status } from './types.ts'
 
@@ -81,6 +82,13 @@ export function createCanary(options: CanaryOptions): Canary {
       document.addEventListener('securitypolicyviolation', onViolation, { signal })
       // Resource errors don't bubble, but they pass through window in the capture phase.
       window.addEventListener('error', onResourceError, { capture: true, signal })
+      const timeoutMs = options.probeTimeoutMs ?? 15_000
+      for (const { feature } of compiled) {
+        if (!feature.probe) continue
+        void runProbe(feature.probe, timeoutMs, signal).then(ok => {
+          if (!signal.aborted) setStatus(feature.id, ok ? 'ok' : 'load-failed')
+        })
+      }
     },
     stop() {
       controller?.abort()
@@ -116,7 +124,14 @@ function compile(features: readonly Feature[]): Compiled[] {
     if (ids.has(feature.id)) throw new TypeError(`res-canary: duplicate feature id "${feature.id}"`)
     ids.add(feature.id)
     if (feature.origins.length === 0) throw new TypeError(`res-canary: feature "${feature.id}" has no origins`)
-    return { feature, patterns: feature.origins.map(origin => parseOriginPattern(origin)) }
+    const patterns = feature.origins.map(origin => parseOriginPattern(origin))
+    const { probe } = feature
+    if (probe && probe.type !== 'custom' && !patterns.some(pattern => matchesOrigin(probe.url, pattern))) {
+      throw new TypeError(
+        `res-canary: feature "${feature.id}" probes ${probe.url}, which is outside its origins, so the IT list would miss it`,
+      )
+    }
+    return { feature, patterns }
   })
 }
 

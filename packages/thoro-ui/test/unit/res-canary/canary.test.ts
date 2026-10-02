@@ -236,3 +236,60 @@ describe('createCanary', () => {
     expect(() => createCanary({ features: [chat], ownPolicy: 'api.own.example', ...overrides })).toThrow(message)
   })
 })
+
+describe('probes', () => {
+  const tick = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0))
+
+  it('marks a feature ok or load-failed from its probe', async () => {
+    const canary = setup({
+      features: [
+        { ...chat, probe: { run: async () => true, type: 'custom' } },
+        { ...sign, probe: { run: async () => false, type: 'custom' } },
+      ],
+    })
+    await vi.waitFor(() => expect(canary.getSnapshot().statuses).toEqual({ chat: 'ok', sign: 'load-failed' }))
+  })
+
+  it('does not downgrade a failure when the probe succeeds afterwards', async () => {
+    let finish: (ok: boolean) => void = () => {}
+    const run = vi.fn(
+      () =>
+        new Promise<boolean>(resolve => {
+          finish = resolve
+        }),
+    )
+    const canary = setup({ features: [{ ...chat, probe: { run, type: 'custom' } }] })
+    await vi.waitFor(() => expect(run).toHaveBeenCalled())
+    failImage('https://widget.chat.example/a.png')
+    finish(true)
+    await tick()
+    expect(canary.getSnapshot().statuses.chat).toBe('load-failed')
+  })
+
+  it('aborts the probe signal on stop() and ignores results that arrive afterwards', async () => {
+    let finish: (ok: boolean) => void = () => {}
+    const run = vi.fn(
+      (_signal: AbortSignal) =>
+        new Promise<boolean>(resolve => {
+          finish = resolve
+        }),
+    )
+    const canary = setup({ features: [{ ...chat, probe: { run, type: 'custom' } }] })
+    await vi.waitFor(() => expect(run).toHaveBeenCalled())
+    canary.stop()
+    expect(run.mock.calls[0][0].aborted).toBe(true)
+    finish(false)
+    await tick()
+    expect(canary.getSnapshot().statuses.chat).toBe('unknown')
+  })
+
+  it('rejects a probe URL outside the feature origins', () => {
+    expect(() =>
+      createCanary({
+        features: [{ ...chat, probe: { type: 'script', url: 'https://other.example/a.js' } }],
+        ownPolicy: 'api.own.example',
+        storage: null,
+      }),
+    ).toThrow(/outside its origins/)
+  })
+})
