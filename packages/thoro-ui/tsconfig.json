@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "jsx": "react-jsx",
     "types": ["node", "vite-plus/test/globals"]
   },
   "include": ["src", "test", "scripts"]

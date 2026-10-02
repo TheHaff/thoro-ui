@@ -22,6 +22,17 @@ export default defineConfig({
     },
     // Listed explicitly: without a .gitignore in effect, the import plugin walks node_modules.
     ignorePatterns: ['**/dist/**', 'node_modules/**', '**/playwright-report/**', '**/test-results/**'],
+    overrides: [
+      {
+        // React variants (collection spec §2): the rules of hooks.
+        files: ['**/*.tsx'],
+        plugins: ['react'],
+        rules: {
+          'react/exhaustive-deps': 'error',
+          'react/rules-of-hooks': 'error',
+        },
+      },
+    ],
     options: {
       // Type-aware rules only; `tsc -p .` stays the type checker because it also reports
       // isolatedDeclarations errors, which this path does not.

@@ -1,5 +1,6 @@
 import type { BlockedFeature, Canary } from '../types.ts'
 import { originsText, renderCanary, type RenderedCanary } from './render.ts'
+import { selectContents } from './select.ts'
 import { resolveStrings, type CanaryStrings } from './strings.ts'
 import { canarySheet } from './styles.ts'
 
@@ -194,16 +195,4 @@ function createElementClass(): CustomElementConstructor {
 
 function localeOf(element: Element): string {
   return element.closest('[lang]')?.getAttribute('lang') || document.documentElement.lang || 'en'
-}
-
-function selectContents(node: Node): void {
-  try {
-    const range = document.createRange()
-    range.selectNodeContents(node)
-    const selection = document.getSelection()
-    selection?.removeAllRanges()
-    selection?.addRange(range)
-  } catch {
-    // Selecting inside a shadow root is best-effort; some engines refuse.
-  }
 }

@@ -36,6 +36,10 @@
       "types": "./dist/res-canary/element.d.ts",
       "default": "./dist/res-canary/element.js"
     },
+    "./res-canary/react": {
+      "types": "./dist/res-canary/react.d.ts",
+      "default": "./dist/res-canary/react.js"
+    },
     "./res-canary/react.css": "./dist/res-canary/react.css",
     "./package.json": "./package.json"
   },
@@ -51,7 +55,19 @@
   "devDependencies": {
     "@playwright/test": "1.63.0",
     "@size-limit/preset-small-lib": "14.1.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "happy-dom": "20.14.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "size-limit": "14.1.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
   }
 }

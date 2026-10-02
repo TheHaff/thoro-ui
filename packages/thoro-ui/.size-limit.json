@@ -1,9 +1,20 @@
 [
-  { "name": "res-canary core", "path": "dist/res-canary/index.js", "limit": "2 KB", "gzip": true },
+  {
+    "name": "res-canary core",
+    "path": "dist/res-canary/index.js",
+    "limit": "2 KB",
+    "gzip": true
+  },
   {
     "name": "res-canary element (with everything it imports)",
     "path": "dist/res-canary/element.js",
     "limit": "4 KB",
+    "gzip": true
+  },
+  {
+    "name": "res-canary react (React itself is a peer and is not counted)",
+    "path": "dist/res-canary/react.js",
+    "limit": "2 KB",
     "gzip": true
   }
 ]
