@@ -2,6 +2,8 @@
 
 Small, dependency-free web components for compliance-minded web apps, published as one tree-shakeable npm package. The user guide is the package README: [`packages/thoro-ui`](packages/thoro-ui/README.md).
 
+**Docs and live demo:** <https://thehaff.github.io/thoro-ui/>
+
 ## Components
 
 | component    | what it does                                                                                                                                                                   |

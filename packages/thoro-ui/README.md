@@ -2,6 +2,8 @@
 
 Small, dependency-free web components for compliance-minded web apps. Every component has its own entry point, so your bundle only carries what you import.
 
+**Docs and live demo:** <https://thehaff.github.io/thoro-ui/>
+
 | component    | import                                                                            | what it does                                                                                                                                    |
 | ------------ | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `res-canary` | `thoro-ui/res-canary`, `thoro-ui/res-canary/element`, `thoro-ui/res-canary/react` | Tells users when their browser or network blocks the third-party resources your app depends on, and gives their IT team the addresses to allow. |

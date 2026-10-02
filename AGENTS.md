@@ -24,6 +24,7 @@ packages/thoro-ui/                  the only published package
   test/unit/<name>/                 Vitest (happy-dom)
   test/browser/                     Playwright: shared fixture server, fixtures/, <name>/*.spec.ts
 examples/                           private workspace packages that use thoro-ui
+site/                               the docs site (GitHub Pages); private, built by `vp build`
 docs/specs, docs/plans
 ```
 
@@ -53,6 +54,8 @@ Run from the repo root. Available once the plan's Tasks 1, 2 and 8 have added th
 | `pnpm size`         | size-limit against the budgets (run after `build`)      |
 | `pnpm test:ssr`     | imports `dist/` in plain Node (run after `build`)       |
 | `pnpm test:browser` | builds, then Playwright in Chromium, Firefox and WebKit |
+
+Docs site: `pnpm build && pnpm -C site dev` to work on it; `pnpm -C site test:browser` checks the built pages (Chromium). It deploys from `main` via `.github/workflows/pages.yml`.
 
 To pass arguments — one test file, one browser — run the package script directly: `pnpm -C packages/thoro-ui test test/unit/res-canary/origins.test.ts`, `pnpm -C packages/thoro-ui test:browser --project=webkit`.
 
