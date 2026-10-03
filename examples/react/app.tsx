@@ -14,7 +14,7 @@ const canary: Canary = createCanary({
       probe: { type: 'script', url: 'https://widget.chat.example/loader.js' },
     },
   ],
-  ownPolicy: 'api.example.com',
+  ownPolicy: 'api.app.example',
 })
 canary.start()
 

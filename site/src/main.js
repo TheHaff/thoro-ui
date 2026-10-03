@@ -5,6 +5,8 @@ for (const pre of document.querySelectorAll('pre.code')) {
   button.type = 'button'
   button.className = 'copy'
   button.textContent = 'Copy'
+  // Announces "Copied" or "Select and copy" to screen readers.
+  button.setAttribute('aria-live', 'polite')
   button.addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(pre.querySelector('code')?.textContent ?? '')

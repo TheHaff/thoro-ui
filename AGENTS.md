@@ -7,7 +7,8 @@ thoro-ui is a collection of small, dependency-free web components for compliance
 - **Collection spec:** [`docs/specs/2026-10-01-thoro-ui-design.md`](docs/specs/2026-10-01-thoro-ui-design.md) — layout, naming, theming and tooling rules every component follows.
 - **Canary spec:** [`docs/specs/2026-09-29-res-canary-design.md`](docs/specs/2026-09-29-res-canary-design.md)
 - **React variant spec:** [`docs/specs/2026-10-02-res-canary-react-design.md`](docs/specs/2026-10-02-res-canary-react-design.md)
-- **Implementation plans:** [`docs/plans/2026-10-01-res-canary.md`](docs/plans/2026-10-01-res-canary.md) (done) and [`docs/plans/2026-10-02-res-canary-react.md`](docs/plans/2026-10-02-res-canary-react.md) — each task has files, code, tests and commands; do them in order.
+- **Docs site spec:** [`docs/specs/2026-10-02-docs-site-design.md`](docs/specs/2026-10-02-docs-site-design.md) — the site at thoro.dev.
+- **Implementation plans:** [`docs/plans/2026-10-01-res-canary.md`](docs/plans/2026-10-01-res-canary.md), [`docs/plans/2026-10-02-res-canary-react.md`](docs/plans/2026-10-02-res-canary-react.md) and [`docs/plans/2026-10-02-docs-site.md`](docs/plans/2026-10-02-docs-site.md), all done — each task has files, code, tests and commands; do them in order.
 
 If a plan and a spec disagree, the spec wins — flag the conflict to the maintainer instead of silently picking one. Don't reopen the decisions recorded in the specs' decision tables without a new reason.
 
@@ -55,7 +56,7 @@ Run from the repo root. Available once the plan's Tasks 1, 2 and 8 have added th
 | `pnpm test:ssr`     | imports `dist/` in plain Node (run after `build`)       |
 | `pnpm test:browser` | builds, then Playwright in Chromium, Firefox and WebKit |
 
-Docs site: `pnpm build && pnpm -C site dev` to work on it; `pnpm -C site test:browser` checks the built pages (Chromium). It deploys from `main` via `.github/workflows/pages.yml`.
+Docs site: `pnpm build && pnpm -C site dev` to work on it. `pnpm -C site test:browser` checks the built pages in Chromium; it builds the site but not the package, so run `pnpm build` first (the root `pnpm test:browser` does both). It deploys from `main` via `.github/workflows/pages.yml`.
 
 To pass arguments — one test file, one browser — run the package script directly: `pnpm -C packages/thoro-ui test test/unit/res-canary/origins.test.ts`, `pnpm -C packages/thoro-ui test:browser --project=webkit`.
 

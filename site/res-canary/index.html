@@ -70,6 +70,7 @@
               <button type="button" role="tab" id="tab-react" aria-controls="panel-react">React</button>
             </div>
             <div role="tabpanel" id="panel-element" aria-labelledby="tab-element">
+              <h3 class="panel-label">Web component</h3>
               <pre class="code"><code>import { createCanary } from 'thoro-ui/res-canary'
 import { mountBanner } from 'thoro-ui/res-canary/element'
 
@@ -90,6 +91,7 @@ canary.start()
 mountBanner(canary)</code></pre>
             </div>
             <div role="tabpanel" id="panel-react" aria-labelledby="tab-react">
+              <h3 class="panel-label">React</h3>
               <pre class="code"><code>import { createCanary } from 'thoro-ui/res-canary'
 import { ResCanary } from 'thoro-ui/res-canary/react'
 import 'thoro-ui/res-canary/react.css'
@@ -172,29 +174,27 @@ export function Layout({ children }) {
           <table>
             <tbody>
               <tr>
-                <td><code>features</code></td>
+                <th scope="row"><code>features</code></th>
                 <td>What you load from where (next table).</td>
               </tr>
               <tr>
-                <td><code>ownPolicy</code></td>
+                <th scope="row"><code>ownPolicy</code></th>
                 <td>Required. Text, RegExp or function that recognises your own CSP.</td>
               </tr>
               <tr>
-                <td>
-                  <code>onChange</code>, <code>onOwnPolicy<wbr />Violation</code>
-                </td>
+                <th scope="row"><code>onChange</code>, <code>onOwnPolicyViolation</code></th>
                 <td>Callbacks for your telemetry.</td>
               </tr>
               <tr>
-                <td><code>storage</code>, <code>storageKey</code></td>
+                <th scope="row"><code>storage</code>, <code>storageKey</code></th>
                 <td>
                   Where dismissal is remembered. Default <code>localStorage</code>; <code>null</code> = this page only.
                 </td>
               </tr>
               <tr>
-                <td>
-                  <code>probeTimeout<wbr />Ms</code>
-                </td>
+                <th scope="row">
+                  <code>probeTimeoutMs</code>
+                </th>
                 <td>Silence that counts as blocked. Default <code>15000</code>; <code>0</code> turns it off.</td>
               </tr>
             </tbody>
@@ -204,17 +204,17 @@ export function Layout({ children }) {
           <table>
             <tbody>
               <tr>
-                <td><code>id</code>, <code>label</code>, <code>impact</code></td>
+                <th scope="row"><code>id</code>, <code>label</code>, <code>impact</code></th>
                 <td>Stable id, short name, one sentence on what won't work.</td>
               </tr>
               <tr>
-                <td><code>origins</code></td>
+                <th scope="row"><code>origins</code></th>
                 <td>
                   CSP host-sources such as <code>https://*.vendor.example</code>. Also the list IT is asked to allow.
                 </td>
               </tr>
               <tr>
-                <td><code>probe</code></td>
+                <th scope="row"><code>probe</code></th>
                 <td>
                   Optional startup check: <code>script</code>, <code>style</code>, <code>image</code>,
                   <code>fetch</code> or <code>custom</code>.
@@ -227,19 +227,19 @@ export function Layout({ children }) {
           <table>
             <tbody>
               <tr>
-                <td><code>canary</code> / <code>items</code></td>
+                <th scope="row"><code>canary</code> / <code>items</code></th>
                 <td>Uncontrolled (it dismisses itself) or controlled (you own the state).</td>
               </tr>
               <tr>
-                <td><code>variant</code></td>
+                <th scope="row"><code>variant</code></th>
                 <td><code>"banner"</code> (full width) or <code>"inline"</code> (card, default).</td>
               </tr>
               <tr>
-                <td><code>strings</code></td>
+                <th scope="row"><code>strings</code></th>
                 <td>Override any text, for translations.</td>
               </tr>
               <tr>
-                <td>events</td>
+                <th scope="row">events</th>
                 <td>
                   <code>res-canary-dismiss</code> and <code>res-canary-copy</code>; <code>preventDefault()</code> stops
                   the uncontrolled dismiss.
@@ -252,30 +252,25 @@ export function Layout({ children }) {
           <table>
             <tbody>
               <tr>
-                <td><code>canary</code> / <code>items</code></td>
+                <th scope="row"><code>canary</code> / <code>items</code></th>
                 <td>Same two modes as the element.</td>
               </tr>
               <tr>
-                <td><code>variant</code>, <code>strings</code>, <code>className</code></td>
+                <th scope="row"><code>variant</code>, <code>strings</code>, <code>className</code></th>
                 <td>Same as the element, plus a class on the root.</td>
               </tr>
               <tr>
-                <td><code>lang</code></td>
+                <th scope="row"><code>lang</code></th>
                 <td>Locale for joining labels; pass it when you render on a server.</td>
               </tr>
               <tr>
-                <td><code>onDismiss</code>, <code>onCopy</code></td>
+                <th scope="row"><code>onDismiss</code>, <code>onCopy</code></th>
                 <td>Called when × or <strong>Copy for IT</strong> is pressed.</td>
               </tr>
             </tbody>
           </table>
 
           <h3>Theming</h3>
-          <p>
-            Set <code>--thoro-bg</code>, <code>--thoro-fg</code>, <code>--thoro-border</code>,
-            <code>--thoro-accent</code>, <code>--thoro-radius</code> or <code>--thoro-font</code> on
-            <code>:root</code> for every component, or on one component.
-          </p>
           <pre class="code"><code>:root {
   --thoro-accent: #c2410c;
 }
@@ -283,6 +278,11 @@ thoro-res-canary,
 .thoro-res-canary {
   --thoro-bg: #fff7ed;
 }</code></pre>
+          <p>
+            Set <code>--thoro-bg</code>, <code>--thoro-fg</code>, <code>--thoro-border</code>,
+            <code>--thoro-accent</code>, <code>--thoro-radius</code> or <code>--thoro-font</code> on
+            <code>:root</code> for every component, or on one component.
+          </p>
         </section>
 
         <section aria-labelledby="limits">

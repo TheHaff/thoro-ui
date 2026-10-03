@@ -1,6 +1,6 @@
 # thoro-ui docs site — design
 
-- **Status:** approved by the maintainer, 2026-10-02. Not yet implemented.
+- **Status:** approved by the maintainer, 2026-10-02; implemented 2026-10-02.
 - **Address:** `https://thoro.dev/` — the repo's GitHub Pages site under its custom domain, deployed from `main` by GitHub Actions. Changed from `https://thehaff.github.io/thoro-ui/` on 2026-10-02, before the first deploy.
 - **Builds on:** the collection spec [`2026-10-01-thoro-ui-design.md`](2026-10-01-thoro-ui-design.md) and the component specs it links. The site documents what those specs define; it adds no behaviour to the package.
 
@@ -43,7 +43,7 @@ A short, calm documentation site that a person with ADHD can scan and act on: wh
 4. How it detects (the five-row table from the package README).
 5. Options and props: core options, feature fields, element, React — compact tables.
 6. Theming: the `--thoro-*` variables and a CSS example.
-7. Limitations (six bullets).
+7. Limitations (seven bullets, in two lists: not detected, good to know).
 
 Examples use `*.example` / `*.invalid` hosts only. No analytics, no third-party fonts, scripts or styles.
 

@@ -11,8 +11,10 @@ function strictCsp(): Plugin {
   return {
     name: 'strict-csp',
     apply: 'build',
-    transformIndexHtml: html =>
-      html.replace('<head>', `<head>\n    <meta http-equiv="Content-Security-Policy" content="${CSP}" />`),
+    // First in <head>: a policy only governs the elements that come after it.
+    transformIndexHtml: () => [
+      { tag: 'meta', attrs: { 'http-equiv': 'Content-Security-Policy', content: CSP }, injectTo: 'head-prepend' },
+    ],
   }
 }
 

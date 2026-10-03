@@ -50,7 +50,7 @@ import { createCanary } from 'thoro-ui/res-canary'
 import { mountBanner } from 'thoro-ui/res-canary/element'
 
 const canary = createCanary({
-  ownPolicy: 'api.example.com', // any string unique to your own CSP
+  ownPolicy: 'api.app.example', // any string unique to your own CSP
   features: [
     {
       id: 'chat',
@@ -117,7 +117,7 @@ import { createCanary } from 'thoro-ui/res-canary'
 import { ResCanary } from 'thoro-ui/res-canary/react'
 import 'thoro-ui/res-canary/react.css'
 
-const canary = createCanary({ ownPolicy: 'api.example.com', features: [/* … */] })
+const canary = createCanary({ ownPolicy: 'api.app.example', features: [/* … */] })
 canary.start() // as early as possible, on the client
 
 export function Layout({ children }) {
