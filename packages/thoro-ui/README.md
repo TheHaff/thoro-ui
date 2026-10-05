@@ -15,8 +15,10 @@ Small, dependency-free web components for compliance-minded web apps. Every comp
 ## Install
 
 ```sh
-npm install @thoro/ui
+npm install @thoro/ui@beta
 ```
+
+**Beta:** the API may change before 1.0. Please [report problems](https://github.com/TheHaff/thoro-ui/issues).
 
 ## Theming
 
@@ -147,7 +149,7 @@ How it differs from the element:
 - **It renders into your page, not a shadow root.** Classes are prefixed (`.thoro-res-canary__*`), but element rules on your page such as `button { … }` apply. Skip `react.css` to style it entirely yourself; the `--thoro-*` variables work either way.
 - **The entry starts with `'use client'`**, so frameworks with React Server Components treat it as a client component.
 
-The web component works in React 19 too — see [`examples/react/app.tsx`](https://github.com/TheHaff/thoro-ui/blob/main/examples/react/app.tsx) for both the component and a fully custom UI with `useSyncExternalStore(canary.subscribe, canary.getSnapshot)`.
+[`examples/react/app.tsx`](https://github.com/TheHaff/thoro-ui/blob/main/examples/react/app.tsx) shows `<ResCanary>` and a fully custom UI built on `useSyncExternalStore(canary.subscribe, canary.getSnapshot)`. The web component works in React 19 too, since React 19 supports custom elements.
 
 ### API
 
@@ -172,6 +174,7 @@ Options: `features`, `ownPolicy` (required), `onChange`, `onOwnPolicyViolation`,
 - **Before `start()`:** violations that happened earlier are missed. Probes still catch a blocked host.
 - **`load-failed` includes vendor outages.** The default text says "usually" for that reason.
 - **Chrome logs an "unused preload" warning** for `script` and `style` probes. Use a `fetch` probe to avoid it.
+- **Firefox counts an HTTP error as reachable for `script` and `style` probes.** It fires `load` on a preload that gets a 404, so a proxy that answers with a block page may go unseen there. Chromium and WebKit report it. Where the vendor serves an image, an `image` probe catches it in every browser.
 - **An extension that hides an element** without blocking its request can't be detected.
 
 ## Browser support

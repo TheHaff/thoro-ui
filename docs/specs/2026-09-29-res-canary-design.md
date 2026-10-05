@@ -175,7 +175,7 @@ Browsers give a page no API to read its own CSP headers. The only way to tell "o
 | `fetch`  | `fetch(url, { mode: 'no-cors', signal })`                 | Needs the origin in the host's `connect-src`; avoids the preload warning.                                                   |
 | `custom` | `run(signal)` → `true` ok / anything else or throw failed | For anything else. `signal` aborts on `stop()`.                                                                             |
 
-A probe that succeeds sets `ok` (unless the feature already failed). A probe that errors, or does not settle within `probeTimeoutMs`, sets `load-failed`; a late answer after the timeout is ignored. Preload links are removed once they settle.
+A probe that succeeds sets `ok` (unless the feature already failed). A probe that errors, or does not settle within `probeTimeoutMs`, sets `load-failed`; a late answer after the timeout is ignored. Preload links are removed once they settle. In Firefox, a preload that gets an HTTP error response (a 404, or a proxy's block page) fires `load`, so `script` and `style` probes count it as reachable; Chromium and WebKit fire `error`, and an `image` probe fails in every engine (verified 2026-10-05). The README lists this under Limitations.
 
 Violations fired before `start()` are lost. The README tells hosts to call `start()` before loading any third-party script.
 
@@ -340,7 +340,7 @@ The package must run on a page with `default-src 'self'`, no `'unsafe-inline'`, 
 - No `eval`, `new Function`, or string timers. No inline event handlers.
 - No network requests other than the configured probes. No fonts, icons or scripts from a CDN.
 
-**To verify in the first implementation task:** that constructed stylesheets are not blocked by a strict `style-src` in Chromium, Firefox and WebKit. If any engine blocks them, stop: the fallback is a `nonce` property that the element applies to a `<style>` element instead, which changes the element's design and needs the maintainer's approval. Verified 2026-09-30 in Chromium and WebKit (no violations, sheet applied); Firefox still to run, from a normal terminal because the agent sandbox stops Firefox launching.
+**To verify in the first implementation task:** that constructed stylesheets are not blocked by a strict `style-src` in Chromium, Firefox and WebKit. If any engine blocks them, stop: the fallback is a `nonce` property that the element applies to a `<style>` element instead, which changes the element's design and needs the maintainer's approval. Verified 2026-09-30 in Chromium and WebKit (no violations, sheet applied); Firefox verified 2026-10-05 in CI, where `stylesheet.spec.ts` passes.
 
 ## 9. Packaging
 
@@ -377,7 +377,7 @@ Packaging, tooling and CI follow the [collection spec](2026-10-01-thoro-ui-desig
 
 ## 11. Documentation and examples
 
-- README (the res-canary section of the package README, which is the npm page): what it does, quick start (banner in a few lines), choosing `ownPolicy`, the feature config, controlled vs uncontrolled, theming, API, and **Limitations**: iframes, `fetch`/WebSocket/WebRTC need `report()`, violations before `start()` are missed, `load-failed` also covers vendor outages, the Chrome unused-preload warning, extensions that hide elements without blocking them.
+- README (the res-canary section of the package README, which is the npm page): what it does, quick start (banner in a few lines), choosing `ownPolicy`, the feature config, controlled vs uncontrolled, theming, API, and **Limitations**: iframes, `fetch`/WebSocket/WebRTC need `report()`, violations before `start()` are missed, `load-failed` also covers vendor outages, the Chrome unused-preload warning, Firefox counting HTTP errors as reachable for `script` and `style` probes, extensions that hide elements without blocking them.
 - `examples/vanilla/` — a small Vite app (one HTML page and one module), run with `vp -C examples/vanilla dev`.
 - `examples/react/` — React 19: `<ResCanary>` from `@thoro/ui/res-canary/react`, and a custom UI via `useSyncExternalStore`. Type-checked in CI.
 - README React section (added 2026-10-02): installing React, the CSS import, the props, and how the React variant differs from the element (React spec §1).
@@ -406,12 +406,12 @@ Settled during design. Revisit only with a new reason.
 ## 13. Definition of done (v1)
 
 - [ ] Every unit test, the server-import check and all browser scenarios pass in Chromium, Firefox and WebKit.
-- [ ] `pnpm size` passes: core ≤ 2 KB, element ≤ 4 KB (gzip).
-- [ ] `pnpm pack` in `packages/thoro-ui` contains only `dist/`, `package.json`, `README.md` and `LICENSE`.
+- [x] `pnpm size` passes: core ≤ 2 KB, element ≤ 4 KB (gzip).
+- [x] `pnpm pack` in `packages/thoro-ui` contains only `dist/`, `package.json`, `README.md` and `LICENSE`.
 - [ ] README covers everything in section 11; examples run (vanilla) and type-check (React).
 - [ ] CI is green on GitHub.
-- [ ] No private company, customer or vendor names anywhere in the repo.
-- [ ] Publishing is left to the maintainer.
+- [x] No private company, customer or vendor names anywhere in the repo.
+- [x] Publishing is left to the maintainer.
 
 ## 14. Risks
 

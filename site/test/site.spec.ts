@@ -69,7 +69,7 @@ test('a Copy button copies its code block', async ({ context, page }) => {
   await expect(button).toHaveAttribute('aria-live', 'polite')
   await button.click()
   await expect(page.getByRole('button', { name: 'Copied' }).first()).toBeVisible()
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('npm install @thoro/ui')
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('npm install @thoro/ui@beta')
 })
 
 test('selecting a whole code block by hand leaves out the Copy button', async ({ page }) => {
@@ -80,7 +80,7 @@ test('selecting a whole code block by hand leaves out the Copy button', async ({
     getSelection()?.selectAllChildren(pre)
     return getSelection()?.toString()
   })
-  expect(selected).toBe('npm install @thoro/ui')
+  expect(selected).toBe('npm install @thoro/ui@beta')
 })
 
 // Review Focus 5

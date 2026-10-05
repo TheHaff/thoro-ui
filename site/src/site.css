@@ -159,6 +159,12 @@ h3 {
   color: var(--muted);
 }
 
+.beta {
+  margin: 0;
+  font-size: 15px;
+  color: var(--muted);
+}
+
 .card {
   display: block;
   padding: 18px 20px;
