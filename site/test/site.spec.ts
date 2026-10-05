@@ -12,7 +12,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 const POLICY =
-  "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; require-trusted-types-for 'script'; trusted-types 'none'"
+  "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; require-trusted-types-for 'script'; trusted-types 'none'"
 
 const violations = (page: import('@playwright/test').Page): Promise<string[]> =>
   page.evaluate(() => (globalThis as { cspViolations?: string[] }).cspViolations ?? [])
@@ -43,6 +43,22 @@ test('the policy is exact, comes before every script and stylesheet, and is enfo
     document.body.append(image)
   })
   await expect.poll(() => violations(page)).toEqual(['img-src https://elsewhere.invalid/probe.png'])
+})
+
+// base-uri doesn't fall back to default-src: without it, an injected <base> would point every relative
+// link at another site.
+test('an injected <base> is ignored, so links keep pointing at this site', async ({ page }) => {
+  await page.goto('/')
+  const before = await page.evaluate(() => document.baseURI)
+  await page.evaluate(() => {
+    const base = document.createElement('base')
+    base.href = 'https://elsewhere.invalid/'
+    document.head.append(base)
+  })
+  expect(await page.evaluate(() => document.baseURI)).toBe(before)
+  const nav = page.getByRole('link', { exact: true, name: 'res-canary' })
+  expect(await nav.evaluate(link => (link as HTMLAnchorElement).href)).toBe(`${before}res-canary/`)
+  await expect.poll(() => violations(page)).toEqual(['base-uri https://elsewhere.invalid/'])
 })
 
 test('a Copy button copies its code block', async ({ context, page }) => {

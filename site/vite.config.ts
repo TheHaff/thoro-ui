@@ -5,7 +5,7 @@ import { defineConfig, type Plugin } from 'vite-plus'
 // send headers, so the policy goes in a <meta> tag — at build time only, because the dev server
 // injects inline styles that this policy blocks.
 const CSP =
-  "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; require-trusted-types-for 'script'; trusted-types 'none'"
+  "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; require-trusted-types-for 'script'; trusted-types 'none'"
 
 function strictCsp(): Plugin {
   return {
