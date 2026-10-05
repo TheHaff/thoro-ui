@@ -178,12 +178,12 @@ importers:
 
   examples/react:
     dependencies:
+      '@thoro/ui':
+        specifier: workspace:*
+        version: link:../../packages/thoro-ui
       react:
         specifier: 19.3.0
         version: 19.3.0
-      thoro-ui:
-        specifier: workspace:*
-        version: link:../../packages/thoro-ui
     devDependencies:
       '@types/react':
         specifier: 19.3.0
@@ -191,7 +191,7 @@ importers:
 
   examples/vanilla:
     dependencies:
-      thoro-ui:
+      '@thoro/ui':
         specifier: workspace:*
         version: link:../../packages/thoro-ui
 
@@ -224,7 +224,7 @@ importers:
 
   site:
     dependencies:
-      thoro-ui:
+      '@thoro/ui':
         specifier: workspace:*
         version: link:../packages/thoro-ui
     devDependencies:

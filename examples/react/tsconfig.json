@@ -5,9 +5,9 @@
     "isolatedDeclarations": false,
     "jsx": "react-jsx",
     "paths": {
-      "thoro-ui/res-canary": ["../../packages/thoro-ui/src/res-canary/index.ts"],
-      "thoro-ui/res-canary/element": ["../../packages/thoro-ui/src/res-canary/element.ts"],
-      "thoro-ui/res-canary/react": ["../../packages/thoro-ui/src/res-canary/react.ts"]
+      "@thoro/ui/res-canary": ["../../packages/thoro-ui/src/res-canary/index.ts"],
+      "@thoro/ui/res-canary/element": ["../../packages/thoro-ui/src/res-canary/element.ts"],
+      "@thoro/ui/res-canary/react": ["../../packages/thoro-ui/src/res-canary/react.ts"]
     },
     "types": []
   },

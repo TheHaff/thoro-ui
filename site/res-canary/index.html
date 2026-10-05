@@ -22,7 +22,7 @@
       <nav aria-label="Main">
         <a href="./" aria-current="page">res-canary</a>
         <a href="https://github.com/TheHaff/thoro-ui">GitHub</a>
-        <a href="https://www.npmjs.com/package/thoro-ui">npm</a>
+        <a href="https://www.npmjs.com/package/@thoro/ui">npm</a>
       </nav>
     </header>
     <main id="main" class="page">
@@ -63,7 +63,7 @@
               >Install, list your vendors, and call <code>start()</code> before any third-party script loads.</strong
             >
           </p>
-          <pre class="code"><code>npm install thoro-ui</code></pre>
+          <pre class="code"><code>npm install @thoro/ui</code></pre>
           <div data-tabs>
             <div role="tablist" aria-label="Quick start">
               <button type="button" role="tab" id="tab-element" aria-controls="panel-element">Web component</button>
@@ -71,8 +71,8 @@
             </div>
             <div role="tabpanel" id="panel-element" aria-labelledby="tab-element">
               <h3 class="panel-label">Web component</h3>
-              <pre class="code"><code>import { createCanary } from 'thoro-ui/res-canary'
-import { mountBanner } from 'thoro-ui/res-canary/element'
+              <pre class="code"><code>import { createCanary } from '@thoro/ui/res-canary'
+import { mountBanner } from '@thoro/ui/res-canary/element'
 
 const canary = createCanary({
   ownPolicy: 'api.app.example', // any text unique to your own CSP
@@ -92,9 +92,9 @@ mountBanner(canary)</code></pre>
             </div>
             <div role="tabpanel" id="panel-react" aria-labelledby="tab-react">
               <h3 class="panel-label">React</h3>
-              <pre class="code"><code>import { createCanary } from 'thoro-ui/res-canary'
-import { ResCanary } from 'thoro-ui/res-canary/react'
-import 'thoro-ui/res-canary/react.css'
+              <pre class="code"><code>import { createCanary } from '@thoro/ui/res-canary'
+import { ResCanary } from '@thoro/ui/res-canary/react'
+import '@thoro/ui/res-canary/react.css'
 
 const canary = createCanary({ ownPolicy: 'api.app.example', features: [/* as in the Web component tab */] })
 canary.start()
@@ -320,7 +320,7 @@ thoro-res-canary,
     </main>
     <footer class="foot">
       MIT · <a href="https://github.com/TheHaff/thoro-ui">GitHub</a> ·
-      <a href="https://www.npmjs.com/package/thoro-ui">npm</a>
+      <a href="https://www.npmjs.com/package/@thoro/ui">npm</a>
     </footer>
   </body>
 </html>

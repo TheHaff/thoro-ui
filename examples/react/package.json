@@ -6,8 +6,8 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
-    "react": "19.3.0",
-    "thoro-ui": "workspace:*"
+    "@thoro/ui": "workspace:*",
+    "react": "19.3.0"
   },
   "devDependencies": {
     "@types/react": "19.3.0"

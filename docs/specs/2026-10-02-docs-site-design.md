@@ -33,7 +33,7 @@ A short, calm documentation site that a person with ADHD can scan and act on: wh
 4. Alternatives are tabs (`Web component | React`), not two long blocks.
 5. An "On this page" list stays in view; nothing is collapsed or hidden behind "read more".
 
-**Home** (`/`): mark + wordmark; one line — _Small, dependency-free web components for compliance-minded web apps._; `npm install thoro-ui` with Copy; component cards (today: **res-canary**); three principles (zero dependencies · strict-CSP safe · any framework or none); footer (MIT · GitHub · npm).
+**Home** (`/`): mark + wordmark; one line — _Small, dependency-free web components for compliance-minded web apps._; `npm install @thoro/ui` with Copy; component cards (today: **res-canary**); three principles (zero dependencies · strict-CSP safe · any framework or none); footer (MIT · GitHub · npm).
 
 **Component page** (`/res-canary/`), in this order:
 
@@ -50,7 +50,7 @@ Examples use `*.example` / `*.invalid` hosts only. No analytics, no third-party 
 ## 2. Build, deploy and checks
 
 ```
-site/                      private workspace package; depends on "thoro-ui": "workspace:*"
+site/                      private workspace package; depends on "@thoro/ui": "workspace:*"
   package.json             scripts: dev, build, preview, test:browser
   vite.config.ts           default base '/'; two HTML entries; assetsInlineLimit 0; CSP <meta> added at build
   playwright.config.ts     Chromium, against `vp preview`
@@ -63,7 +63,7 @@ site/                      private workspace package; depends on "thoro-ui": "wo
   test/site.spec.ts        Playwright checks
 ```
 
-- The site imports thoro-ui by package name, so it uses the built package. The root `pnpm build` (`vp run -r build`) builds the package before the site, because the site depends on it.
+- The site imports `@thoro/ui` by package name, so it uses the built package. The root `pnpm build` (`vp run -r build`) builds the package before the site, because the site depends on it.
 - Links between pages are relative (`res-canary/`, `../`), so they work at any base; asset URLs in HTML are root-absolute (`/mark.png`) and Vite rewrites them for the base.
 - Strict CSP: every built page gets `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; require-trusted-types-for 'script'; trusted-types 'none'` in a `<meta>` tag, added by a small build-only Vite plugin (the dev server injects inline styles and would break under it). The pages have no inline scripts or styles, and `assetsInlineLimit: 0` keeps images out of `data:` URLs. `base-uri 'none'` (added 2026-10-05) matters because `base-uri` doesn't fall back to `default-src`: without it, an injected `<base>` could point every relative link at another site.
 - Copy buttons and tabs enhance plain HTML: without JavaScript every tab panel is visible and code can be selected by hand.

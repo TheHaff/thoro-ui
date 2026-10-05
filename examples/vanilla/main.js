@@ -1,5 +1,5 @@
-import { createCanary } from 'thoro-ui/res-canary'
-import { mountBanner } from 'thoro-ui/res-canary/element'
+import { createCanary } from '@thoro/ui/res-canary'
+import { mountBanner } from '@thoro/ui/res-canary/element'
 
 const canary = createCanary({
   features: [

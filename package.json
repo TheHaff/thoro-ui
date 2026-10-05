@@ -18,7 +18,8 @@
     "typecheck": "vp run -r typecheck",
     "build": "vp run -r build",
     "size": "vp run -r size",
-    "test:ssr": "vp run -r test:ssr"
+    "test:ssr": "vp run -r test:ssr",
+    "test:types": "vp run -r test:types"
   },
   "devDependencies": {
     "@types/node": "26.6.3",

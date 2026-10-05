@@ -1,7 +1,7 @@
 import { useSyncExternalStore, type JSX } from 'react'
-import { createCanary, type Canary } from 'thoro-ui/res-canary'
-import { ResCanary } from 'thoro-ui/res-canary/react'
-import 'thoro-ui/res-canary/react.css'
+import { createCanary, type Canary } from '@thoro/ui/res-canary'
+import { ResCanary } from '@thoro/ui/res-canary/react'
+import '@thoro/ui/res-canary/react.css'
 
 // Create and start once, on the client, before any third-party script loads.
 const canary: Canary = createCanary({

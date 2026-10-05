@@ -1,0 +1,12 @@
+{
+  "extends": "../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "declaration": false,
+    "isolatedDeclarations": false,
+    "jsx": "react-jsx",
+    "noUncheckedSideEffectImports": true,
+    "skipLibCheck": false,
+    "types": []
+  },
+  "include": ["consumer.tsx"]
+}

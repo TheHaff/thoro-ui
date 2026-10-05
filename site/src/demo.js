@@ -1,5 +1,5 @@
-import { createCanary } from 'thoro-ui/res-canary'
-import 'thoro-ui/res-canary/element'
+import { createCanary } from '@thoro/ui/res-canary'
+import '@thoro/ui/res-canary/element'
 
 // Blocks are simulated with report(): nothing on this page is really blocked, and the demo makes no
 // network requests. Storage is off, so a dismissal lasts until Reset.

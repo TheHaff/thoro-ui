@@ -23,5 +23,6 @@ jobs:
       - run: pnpm build
       - run: pnpm size
       - run: pnpm test:ssr
+      - run: pnpm test:types
       - run: pnpm -C packages/thoro-ui exec playwright install --with-deps chromium firefox webkit
       - run: pnpm test:browser

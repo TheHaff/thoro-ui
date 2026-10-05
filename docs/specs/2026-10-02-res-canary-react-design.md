@@ -1,12 +1,12 @@
 # res-canary for React — design
 
 - **Status:** approved 2026-10-02; implemented 2026-10-02.
-- **Entries:** `thoro-ui/res-canary/react` (components) and `thoro-ui/res-canary/react.css` (styles), in the existing `thoro-ui` package.
+- **Entries:** `@thoro/ui/res-canary/react` (components) and `@thoro/ui/res-canary/react.css` (styles), in the existing `@thoro/ui` package.
 - **Builds on:** the canary spec [`2026-09-29-res-canary-design.md`](2026-09-29-res-canary-design.md) (detection core, strings, rendered structure) and the collection spec [`2026-10-01-thoro-ui-design.md`](2026-10-01-thoro-ui-design.md) (layout, naming, theming, tooling, and the React-variant rule this component follows).
 
 ## Goal
 
-React users choose between the web component (`thoro-ui/res-canary/element`) and native React components, imported separately. The React variant renders plain React DOM — no custom element and no shadow DOM — on top of the same headless core. People who don't use React never install or ship React.
+React users choose between the web component (`@thoro/ui/res-canary/element`) and native React components, imported separately. The React variant renders plain React DOM — no custom element and no shadow DOM — on top of the same headless core. People who don't use React never install or ship React.
 
 ## Decisions
 
@@ -22,8 +22,8 @@ React users choose between the web component (`thoro-ui/res-canary/element`) and
 
 ```tsx
 'use client' // first statement of the entry, so React server components can render it
-import { ResCanary } from 'thoro-ui/res-canary/react'
-import 'thoro-ui/res-canary/react.css'
+import { ResCanary } from '@thoro/ui/res-canary/react'
+import '@thoro/ui/res-canary/react.css'
 
 // Uncontrolled: it subscribes to the canary and dismisses itself.
 <ResCanary canary={canary} variant="banner" onDismiss={ids => track(ids)} />
@@ -57,7 +57,7 @@ import 'thoro-ui/res-canary/react.css'
 - `lang` is a prop — React must know the locale while rendering, including on a server; the element reads the closest `lang` after it attaches.
 - No `mountBanner` — place `<ResCanary variant="banner" />` at the top of the layout.
 
-**Exports** of `thoro-ui/res-canary/react`: `ResCanary`, `type ResCanaryProps`, `DEFAULT_STRINGS`, `type CanaryStrings`. `createCanary` stays in `thoro-ui/res-canary`; the React entry never duplicates the core.
+**Exports** of `@thoro/ui/res-canary/react`: `ResCanary`, `type ResCanaryProps`, `DEFAULT_STRINGS`, `type CanaryStrings`. `createCanary` stays in `@thoro/ui/res-canary`; the React entry never duplicates the core.
 
 ## 2. Styling and packaging
 
@@ -80,14 +80,15 @@ The `:host([hidden])` rule is dropped, because the React component renders nothi
 ```json
 "exports": {
   "./res-canary/react": { "types": "./dist/res-canary/react.d.ts", "default": "./dist/res-canary/react.js" },
-  "./res-canary/react.css": "./dist/res-canary/react.css"
+  "./res-canary/react.css": { "types": "./dist/res-canary/react.css.d.ts", "default": "./dist/res-canary/react.css" }
 },
 "sideEffects": ["./dist/*/element.js", "./dist/*/*.css"],
 "peerDependencies": { "react": "^19.0.0" },
 "peerDependenciesMeta": { "react": { "optional": true } }
 ```
 
-- The CSS files are side effects, so bundlers never drop `import 'thoro-ui/res-canary/react.css'`.
+- The CSS files are side effects, so bundlers never drop `import '@thoro/ui/res-canary/react.css'`.
+- The build also writes an empty `dist/res-canary/react.css.d.ts` for the `types` condition (added 2026-10-05). Without it, TypeScript's default `noUncheckedSideEffectImports` rejects the CSS import (TS2882) in apps that don't declare `*.css` themselves; Vite apps do, through `vite/client`.
 - The React entry needs `react` only — not `react-dom`; selecting the origins text uses the browser's Selection API.
 - `'use client'` must be the first statement of `dist/res-canary/react.js`. If bundling drops it, the build step prepends it.
 
@@ -108,6 +109,8 @@ The `:host([hidden])` rule is dropped, because the React component renders nothi
 - **shared CSS**: `react.css` has no bare element selectors, every class is prefixed, and the set of classes the React markup uses equals the set the CSS defines.
 
 **Server rendering** (`test/ssr.ts`, plain Node, after the build): importing `dist/res-canary/react.js` touches no DOM; `renderToString` with a fresh canary returns empty markup and with `items` returns the banner with the expected classes; `react.js` begins with the `'use client'` directive.
+
+**Types** (`test/types/consumer.tsx`, `pnpm test:types`, after the build; added 2026-10-05): an app-style file imports every entry by package name, `react.css` included, and type-checks with `noUncheckedSideEffectImports` and `skipLibCheck: false`, so the shipped `.d.ts` files and the `exports` map are checked together.
 
 **Browser** (one Playwright scenario, all three engines): a strict-CSP page with Trusted Types renders `<ResCanary>` styled by `react.css` with zero violations, and a computed style proves the CSS applied. Before Playwright runs, `test:browser` builds a small fixture bundle that includes React (`test/browser/fixtures/res-canary-react.js`, git-ignored).
 

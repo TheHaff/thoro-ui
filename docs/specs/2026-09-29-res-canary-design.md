@@ -1,14 +1,14 @@
 # res-canary — design
 
 - **Status:** approved 2026-09-29; updated 2026-10-01 to become a thoro-ui component; implemented 2026-10-02. A native React variant is specified separately in [`2026-10-02-res-canary-react-design.md`](2026-10-02-res-canary-react-design.md) (implemented).
-- **Package:** `thoro-ui`, entries `thoro-ui/res-canary` and `thoro-ui/res-canary/element`
+- **Package:** `@thoro/ui`, entries `@thoro/ui/res-canary` and `@thoro/ui/res-canary/element`
 - **Element:** `<thoro-res-canary>`
 - **License:** MIT
 - **Collection rules:** [`2026-10-01-thoro-ui-design.md`](2026-10-01-thoro-ui-design.md). Layout, naming, theming and tooling come from there; this document covers what is specific to the canary.
 - **Implementation plan:** `docs/plans/2026-10-01-res-canary.md` (being rewritten for the new layout).
 - **Working rules for this repo:** [`AGENTS.md`](../../AGENTS.md)
 
-> **Changed 2026-10-01.** This spec was `web-res-canary`, a package of its own. It is now the first component of thoro-ui. Renamed: package `web-res-canary` → entries `thoro-ui/res-canary` and `thoro-ui/res-canary/element`; tag `<web-res-canary>` → `<thoro-res-canary>`; `defineCanaryElement` → `defineResCanaryElement`; events `canary-dismiss` / `canary-copy` → `res-canary-dismiss` / `res-canary-copy`; CSS variables `--wrc-*` → the collection's shared `--thoro-*`; storage key `web-res-canary:dismissed` → `thoro-ui:res-canary:dismissed`. §9 now defers to the collection spec, and §12's name decision is superseded. Detection, the core API, statuses, probes and the size budget are unchanged.
+> **Changed 2026-10-01.** This spec was `web-res-canary`, a package of its own. It is now the first component of thoro-ui. Renamed: package `web-res-canary` → entries `@thoro/ui/res-canary` and `@thoro/ui/res-canary/element`; tag `<web-res-canary>` → `<thoro-res-canary>`; `defineCanaryElement` → `defineResCanaryElement`; events `canary-dismiss` / `canary-copy` → `res-canary-dismiss` / `res-canary-copy`; CSS variables `--wrc-*` → the collection's shared `--thoro-*`; storage key `web-res-canary:dismissed` → `thoro-ui:res-canary:dismissed`. §9 now defers to the collection spec, and §12's name decision is superseded. Detection, the core API, statuses, probes and the size budget are unchanged.
 
 ## 1. Problem
 
@@ -51,11 +51,11 @@ This hits hardest in locked-down environments — regulated industries, large en
 
 ## 5. Architecture
 
-Two entry points in the `thoro-ui` package, zero runtime dependencies.
+Two entry points in the `@thoro/ui` package, zero runtime dependencies.
 
 ```
-thoro-ui/res-canary            core — headless detection + store. No DOM rendering.
-thoro-ui/res-canary/element    <thoro-res-canary> custom element. Renders a core snapshot.
+@thoro/ui/res-canary            core — headless detection + store. No DOM rendering.
+@thoro/ui/res-canary/element    <thoro-res-canary> custom element. Renders a core snapshot.
 ```
 
 The core is usable on its own (custom UI via `subscribe`/`getSnapshot`). The element renders what the core produces; the core never depends on the element.
@@ -219,8 +219,8 @@ A listener that throws does not stop the others; its error is rethrown in a micr
 ### 7.1 Registration
 
 ```ts
-import 'thoro-ui/res-canary/element' // defines <thoro-res-canary>
-import { defineResCanaryElement } from 'thoro-ui/res-canary/element'
+import '@thoro/ui/res-canary/element' // defines <thoro-res-canary>
+import { defineResCanaryElement } from '@thoro/ui/res-canary/element'
 defineResCanaryElement('my-canary') // additionally registers a custom tag name
 ```
 
@@ -250,7 +250,7 @@ The element unsubscribes when removed from the page and catches up with the curr
 **Banner helper:**
 
 ```ts
-import { mountBanner } from 'thoro-ui/res-canary/element'
+import { mountBanner } from '@thoro/ui/res-canary/element'
 const el = mountBanner(canary) // variant="banner", prepended to <body>; waits for DOMContentLoaded if needed
 el.remove() // unmount
 ```
@@ -379,7 +379,7 @@ Packaging, tooling and CI follow the [collection spec](2026-10-01-thoro-ui-desig
 
 - README (the res-canary section of the package README, which is the npm page): what it does, quick start (banner in a few lines), choosing `ownPolicy`, the feature config, controlled vs uncontrolled, theming, API, and **Limitations**: iframes, `fetch`/WebSocket/WebRTC need `report()`, violations before `start()` are missed, `load-failed` also covers vendor outages, the Chrome unused-preload warning, extensions that hide elements without blocking them.
 - `examples/vanilla/` — a small Vite app (one HTML page and one module), run with `vp -C examples/vanilla dev`.
-- `examples/react/` — React 19: `<ResCanary>` from `thoro-ui/res-canary/react`, and a custom UI via `useSyncExternalStore`. Type-checked in CI.
+- `examples/react/` — React 19: `<ResCanary>` from `@thoro/ui/res-canary/react`, and a custom UI via `useSyncExternalStore`. Type-checked in CI.
 - README React section (added 2026-10-02): installing React, the CSS import, the props, and how the React variant differs from the element (React spec §1).
 - Examples are not published to npm. They use `*.example` / `*.invalid` hosts only.
 
@@ -401,7 +401,7 @@ Settled during design. Revisit only with a new reason.
 | Default text says "usually"                                        | The browser cannot tell a blocked request from a vendor outage.                                                                                              | "Your network is blocking…" (wrong during outages).                                                                                                                 |
 | Shadow DOM + constructed stylesheet                                | Host CSS can't break the banner; works under strict CSP without `'unsafe-inline'`.                                                                           | Light DOM with classes (host CSS collisions); `<style>` in shadow root (needs `'unsafe-inline'` or a nonce).                                                        |
 | ~~Name `web-res-canary`~~ — superseded 2026-10-01                  | Covers scripts, images, media, probes and WebRTC; free on npm; doubles as the element tag.                                                                   | `canary` (taken), `csp-canary` (most blocks aren't CSP), `cdn-canary` (not only CDNs), `resource-canary` (maintainer's choice was the `web-` prefix).               |
-| Name `res-canary` inside thoro-ui (2026-10-01)                     | New reason: the canary is now the first component of a collection, so it takes the collection's `thoro-` tag prefix and `thoro-ui/<name>` entry points.      | Keeping `<web-res-canary>` as a standalone name.                                                                                                                    |
+| Name `res-canary` inside thoro-ui (2026-10-01)                     | New reason: the canary is now the first component of a collection, so it takes the collection's `thoro-` tag prefix and `@thoro/ui/<name>` entry points.     | Keeping `<web-res-canary>` as a standalone name.                                                                                                                    |
 
 ## 13. Definition of done (v1)
 

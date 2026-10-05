@@ -1,6 +1,6 @@
 # thoro-ui — agent guide
 
-thoro-ui is a collection of small, dependency-free web components for compliance-minded web apps, published as one tree-shakeable npm package with an entry point per component (`thoro-ui/<name>`, `thoro-ui/<name>/element`). The first component is the resource canary, `<thoro-res-canary>`: it detects when a user's browser or network blocks the third-party resources a web app depends on, tells the user what won't work, and gives their IT team the addresses to allow.
+thoro-ui is a collection of small, dependency-free web components for compliance-minded web apps, published as one tree-shakeable npm package with an entry point per component (`@thoro/ui/<name>`, `@thoro/ui/<name>/element`). The first component is the resource canary, `<thoro-res-canary>`: it detects when a user's browser or network blocks the third-party resources a web app depends on, tells the user what won't work, and gives their IT team the addresses to allow.
 
 ## Status
 
@@ -44,17 +44,18 @@ docs/specs, docs/plans
 
 Run from the repo root. Available once the plan's Tasks 1, 2 and 8 have added them:
 
-| command             | does                                                    |
-| ------------------- | ------------------------------------------------------- |
-| `pnpm lint`         | `vp lint` — oxlint, with type-aware rules               |
-| `pnpm format`       | `vp fmt` — oxfmt, writes                                |
-| `pnpm format:check` | `vp fmt --check` — oxfmt, check only                    |
-| `pnpm typecheck`    | `tsc -p .` in every package (`vp run -r typecheck`)     |
-| `pnpm test`         | `vp test` — Vitest unit tests (happy-dom)               |
-| `pnpm build`        | `vp pack` — tsdown → `packages/thoro-ui/dist/`          |
-| `pnpm size`         | size-limit against the budgets (run after `build`)      |
-| `pnpm test:ssr`     | imports `dist/` in plain Node (run after `build`)       |
-| `pnpm test:browser` | builds, then Playwright in Chromium, Firefox and WebKit |
+| command             | does                                                                         |
+| ------------------- | ---------------------------------------------------------------------------- |
+| `pnpm lint`         | `vp lint` — oxlint, with type-aware rules                                    |
+| `pnpm format`       | `vp fmt` — oxfmt, writes                                                     |
+| `pnpm format:check` | `vp fmt --check` — oxfmt, check only                                         |
+| `pnpm typecheck`    | `tsc -p .` in every package (`vp run -r typecheck`)                          |
+| `pnpm test`         | `vp test` — Vitest unit tests (happy-dom)                                    |
+| `pnpm build`        | `vp pack` — tsdown → `packages/thoro-ui/dist/`                               |
+| `pnpm size`         | size-limit against the budgets (run after `build`)                           |
+| `pnpm test:ssr`     | imports `dist/` in plain Node (run after `build`)                            |
+| `pnpm test:types`   | type-checks an app importing every entry by package name (run after `build`) |
+| `pnpm test:browser` | builds, then Playwright in Chromium, Firefox and WebKit                      |
 
 Docs site: `pnpm build && pnpm -C site dev` to work on it. `pnpm -C site test:browser` checks the built pages in Chromium; it builds the site but not the package, so run `pnpm build` first (the root `pnpm test:browser` does both). It deploys from `main` via `.github/workflows/pages.yml`.
 

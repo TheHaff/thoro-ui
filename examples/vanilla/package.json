@@ -6,6 +6,6 @@
     "dev": "vp dev"
   },
   "dependencies": {
-    "thoro-ui": "workspace:*"
+    "@thoro/ui": "workspace:*"
   }
 }

@@ -4,5 +4,6 @@
     "jsx": "react-jsx",
     "types": ["node", "vite-plus/test/globals"]
   },
-  "include": ["src", "test", "scripts"]
+  "include": ["src", "test", "scripts"],
+  "exclude": ["test/types"]
 }

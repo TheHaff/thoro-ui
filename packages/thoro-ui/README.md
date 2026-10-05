@@ -4,9 +4,9 @@ Small, dependency-free web components for compliance-minded web apps. Every comp
 
 **Docs and live demo:** <https://thoro.dev/>
 
-| component    | import                                                                            | what it does                                                                                                                                    |
-| ------------ | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `res-canary` | `thoro-ui/res-canary`, `thoro-ui/res-canary/element`, `thoro-ui/res-canary/react` | Tells users when their browser or network blocks the third-party resources your app depends on, and gives their IT team the addresses to allow. |
+| component    | import                                                                               | what it does                                                                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `res-canary` | `@thoro/ui/res-canary`, `@thoro/ui/res-canary/element`, `@thoro/ui/res-canary/react` | Tells users when their browser or network blocks the third-party resources your app depends on, and gives their IT team the addresses to allow. |
 
 - **Zero dependencies.** Each component has its own size budget, enforced in CI.
 - **Works under the strictest CSP**, including Trusted Types.
@@ -15,7 +15,7 @@ Small, dependency-free web components for compliance-minded web apps. Every comp
 ## Install
 
 ```sh
-npm install thoro-ui
+npm install @thoro/ui
 ```
 
 ## Theming
@@ -46,8 +46,8 @@ Core ≤ 2 KB, element ≤ 4 KB (gzip).
 Call `start()` as early as possible — before you load any third-party script.
 
 ```js
-import { createCanary } from 'thoro-ui/res-canary'
-import { mountBanner } from 'thoro-ui/res-canary/element'
+import { createCanary } from '@thoro/ui/res-canary'
+import { mountBanner } from '@thoro/ui/res-canary/element'
 
 const canary = createCanary({
   ownPolicy: 'api.app.example', // any string unique to your own CSP
@@ -95,7 +95,7 @@ Browsers give a page no way to read its own CSP headers, so the canary recognise
 ### The element
 
 ```js
-import 'thoro-ui/res-canary/element' // defines <thoro-res-canary>
+import '@thoro/ui/res-canary/element' // defines <thoro-res-canary>
 ```
 
 - **Uncontrolled:** `element.canary = canary`. It subscribes and dismisses itself.
@@ -110,12 +110,12 @@ Parts: `root`, `summary`, `title`, `details`, `list`, `origins`, `copy`, `dismis
 
 #### React
 
-`thoro-ui/res-canary/react` has native React 19 components: plain React DOM, no custom element. React is an optional peer dependency — install it in your app; nothing else in thoro-ui needs it.
+`@thoro/ui/res-canary/react` has native React 19 components: plain React DOM, no custom element. React is an optional peer dependency — install it in your app; nothing else in thoro-ui needs it.
 
 ```tsx
-import { createCanary } from 'thoro-ui/res-canary'
-import { ResCanary } from 'thoro-ui/res-canary/react'
-import 'thoro-ui/res-canary/react.css'
+import { createCanary } from '@thoro/ui/res-canary'
+import { ResCanary } from '@thoro/ui/res-canary/react'
+import '@thoro/ui/res-canary/react.css'
 
 const canary = createCanary({ ownPolicy: 'api.app.example', features: [/* … */] })
 canary.start() // as early as possible, on the client
