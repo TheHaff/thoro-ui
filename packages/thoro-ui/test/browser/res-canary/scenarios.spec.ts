@@ -74,8 +74,10 @@ test.describe('probes', () => {
       await expect.poll(() => status(page)).toBe('ok')
     })
 
-    // A real refused connection, not route.abort(): Firefox reports an aborted preload as loaded.
-    test(`${type} probe: refused → load-failed`, async ({ page }) => {
+    test(`${type} probe: refused → load-failed`, async ({ browserName, page }) => {
+      // Known bug, listed in the README: Firefox fires `load` on a preload link whatever happens to the
+      // request (refused, blocked, 403), so these probes report ok there. Remove once they're fixed.
+      test.fail(browserName === 'firefox' && (type === 'script' || type === 'style'))
       await open(page, 'allowed')
       await page.evaluate(probe => harness.start({ probe }), { type, url: CLOSED + path })
       await expect.poll(() => status(page)).toBe('load-failed')

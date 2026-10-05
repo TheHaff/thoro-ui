@@ -6,8 +6,8 @@ const ROOT = normalize(join(import.meta.dirname, '..', '..'))
 const APP_PORT = 4173
 const VENDOR_PORT = 4174
 const VENDOR = `http://127.0.0.1:${VENDOR_PORT}`
-// Nothing listens here, so the OS refuses the connection: a real network failure, unlike Playwright's
-// route.abort(), which Firefox reports to preload links as a successful load.
+// Nothing listens here, so the OS refuses the connection: a real network failure, as a firewall that
+// rejects would cause. (Port 9 and similar are no good: browsers refuse those ports themselves.)
 const CLOSED = 'http://127.0.0.1:4175'
 // Stands in for "something unique to your own policy". The harness passes it as ownPolicy.
 const OWN_MARKER = 'https://own-marker.invalid'

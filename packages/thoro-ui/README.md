@@ -174,7 +174,7 @@ Options: `features`, `ownPolicy` (required), `onChange`, `onOwnPolicyViolation`,
 - **Before `start()`:** violations that happened earlier are missed. Probes still catch a blocked host.
 - **`load-failed` includes vendor outages.** The default text says "usually" for that reason.
 - **Chrome logs an "unused preload" warning** for `script` and `style` probes. Use a `fetch` probe to avoid it.
-- **Firefox counts an HTTP error as reachable for `script` and `style` probes.** It fires `load` on a preload that gets a 404, so a proxy that answers with a block page may go unseen there. Chromium and WebKit report it. Where the vendor serves an image, an `image` probe catches it in every browser.
+- **In Firefox, `script` and `style` probes don't detect a block.** Firefox fires `load` on a preload link even when the request is refused, cancelled by a blocker or answered with an error page, so these probes report the vendor as reachable there. Chromium and WebKit report it. `image` and `fetch` probes work in every browser.
 - **An extension that hides an element** without blocking its request can't be detected.
 
 ## Browser support

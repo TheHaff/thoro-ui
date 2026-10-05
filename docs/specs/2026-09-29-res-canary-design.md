@@ -175,7 +175,7 @@ Browsers give a page no API to read its own CSP headers. The only way to tell "o
 | `fetch`  | `fetch(url, { mode: 'no-cors', signal })`                 | Needs the origin in the host's `connect-src`; avoids the preload warning.                                                   |
 | `custom` | `run(signal)` → `true` ok / anything else or throw failed | For anything else. `signal` aborts on `stop()`.                                                                             |
 
-A probe that succeeds sets `ok` (unless the feature already failed). A probe that errors, or does not settle within `probeTimeoutMs`, sets `load-failed`; a late answer after the timeout is ignored. Preload links are removed once they settle. In Firefox, a preload that gets an HTTP error response (a 404, or a proxy's block page) fires `load`, so `script` and `style` probes count it as reachable; Chromium and WebKit fire `error`, and an `image` probe fails in every engine (verified 2026-10-05). The README lists this under Limitations.
+A probe that succeeds sets `ok` (unless the feature already failed). A probe that errors, or does not settle within `probeTimeoutMs`, sets `load-failed`; a late answer after the timeout is ignored. Preload links are removed once they settle. In Firefox, a preload link fires `load` even when its request is refused, cancelled by a blocker (tracking protection) or answered with an HTTP error, so `script` and `style` probes report the vendor as reachable there; Chromium and WebKit fire `error`, and `image` and `fetch` probes fail in every engine (verified 2026-10-05 in CI). The browser tests mark the two Firefox cases as expected failures, and the README lists this under Limitations.
 
 Violations fired before `start()` are lost. The README tells hosts to call `start()` before loading any third-party script.
 
@@ -377,7 +377,7 @@ Packaging, tooling and CI follow the [collection spec](2026-10-01-thoro-ui-desig
 
 ## 11. Documentation and examples
 
-- README (the res-canary section of the package README, which is the npm page): what it does, quick start (banner in a few lines), choosing `ownPolicy`, the feature config, controlled vs uncontrolled, theming, API, and **Limitations**: iframes, `fetch`/WebSocket/WebRTC need `report()`, violations before `start()` are missed, `load-failed` also covers vendor outages, the Chrome unused-preload warning, Firefox counting HTTP errors as reachable for `script` and `style` probes, extensions that hide elements without blocking them.
+- README (the res-canary section of the package README, which is the npm page): what it does, quick start (banner in a few lines), choosing `ownPolicy`, the feature config, controlled vs uncontrolled, theming, API, and **Limitations**: iframes, `fetch`/WebSocket/WebRTC need `report()`, violations before `start()` are missed, `load-failed` also covers vendor outages, the Chrome unused-preload warning, Firefox not detecting blocks through `script` and `style` probes, extensions that hide elements without blocking them.
 - `examples/vanilla/` — a small Vite app (one HTML page and one module), run with `vp -C examples/vanilla dev`.
 - `examples/react/` — React 19: `<ResCanary>` from `@thoro/ui/res-canary/react`, and a custom UI via `useSyncExternalStore`. Type-checked in CI.
 - README React section (added 2026-10-02): installing React, the CSS import, the props, and how the React variant differs from the element (React spec §1).
