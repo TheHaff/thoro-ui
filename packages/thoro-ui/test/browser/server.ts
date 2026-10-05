@@ -6,17 +6,20 @@ const ROOT = normalize(join(import.meta.dirname, '..', '..'))
 const APP_PORT = 4173
 const VENDOR_PORT = 4174
 const VENDOR = `http://127.0.0.1:${VENDOR_PORT}`
+// Nothing listens here, so the OS refuses the connection: a real network failure, unlike Playwright's
+// route.abort(), which Firefox reports to preload links as a successful load.
+const CLOSED = 'http://127.0.0.1:4175'
 // Stands in for "something unique to your own policy". The harness passes it as ownPolicy.
 const OWN_MARKER = 'https://own-marker.invalid'
 
-// Our own policy: allows the vendor everywhere it is used.
+// Our own policy: allows the vendor everywhere it is used, and the closed port the probes test against.
 const OWN = [
   "default-src 'self'",
   "script-src 'self'",
-  `script-src-elem 'self' ${VENDOR}`,
-  `style-src 'self' ${VENDOR}`,
-  `img-src 'self' ${VENDOR}`,
-  `connect-src 'self' ${VENDOR} ${OWN_MARKER}`,
+  `script-src-elem 'self' ${VENDOR} ${CLOSED}`,
+  `style-src 'self' ${VENDOR} ${CLOSED}`,
+  `img-src 'self' ${VENDOR} ${CLOSED}`,
+  `connect-src 'self' ${VENDOR} ${CLOSED} ${OWN_MARKER}`,
 ].join('; ')
 
 // A second policy, as a browser extension or corporate proxy would add. Blocks the vendor.

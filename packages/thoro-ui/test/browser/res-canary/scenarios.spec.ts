@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 
 const VENDOR = 'http://127.0.0.1:4174'
+// Nothing listens here (see server.ts), so the OS refuses the connection.
+const CLOSED = 'http://127.0.0.1:4175'
 
 // The harness is a module script, which runs before the load event goto() waits for.
 // Only page.evaluate is used: it goes through the automation protocol, not the page's (blocked) eval.
@@ -72,10 +74,10 @@ test.describe('probes', () => {
       await expect.poll(() => status(page)).toBe('ok')
     })
 
-    test(`${type} probe: dropped → load-failed`, async ({ page }) => {
-      await page.route(`${VENDOR}/**`, route => route.abort())
+    // A real refused connection, not route.abort(): Firefox reports an aborted preload as loaded.
+    test(`${type} probe: refused → load-failed`, async ({ page }) => {
       await open(page, 'allowed')
-      await page.evaluate(probe => harness.start({ probe }), { type, url: VENDOR + path })
+      await page.evaluate(probe => harness.start({ probe }), { type, url: CLOSED + path })
       await expect.poll(() => status(page)).toBe('load-failed')
     })
   }
