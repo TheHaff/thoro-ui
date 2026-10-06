@@ -15,9 +15,11 @@ document.addEventListener('securitypolicyviolation', event => {
 globalThis.harness = {
   own,
   violations,
-  start({ banner = false, probe, probeTimeoutMs = 2000 } = {}) {
+  // lazy by default: the other scenarios cover what start() does besides the eager checks.
+  start({ banner = false, lazy = true, origins = [VENDOR, CLOSED], probe, probeTimeoutMs = 2000 } = {}) {
     canary = createCanary({
-      features: [{ id: 'widget', impact: "The widget won't load.", label: 'Widget', origins: [VENDOR, CLOSED], probe }],
+      features: [{ id: 'widget', impact: "The widget won't load.", label: 'Widget', origins, probe }],
+      lazy,
       onOwnPolicyViolation: violation => own.push(violation),
       ownPolicy: 'own-marker.invalid',
       probeTimeoutMs,

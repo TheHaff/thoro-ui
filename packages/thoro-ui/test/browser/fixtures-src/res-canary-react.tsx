@@ -16,6 +16,7 @@ document.head.append(link)
 
 const canary = createCanary({
   features: [{ id: 'widget', impact: "The widget won't load.", label: 'Widget', origins: ['http://127.0.0.1:4174'] }],
+  lazy: true,
   ownPolicy: 'own-marker.invalid',
   storage: null,
 })

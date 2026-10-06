@@ -11,8 +11,21 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    { name: 'chromium', testIgnore: /tracking-protection/, use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox', testIgnore: /tracking-protection/, use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit', testIgnore: /tracking-protection/, use: { ...devices['Desktop Safari'] } },
+    {
+      name: 'firefox-tracking-protection',
+      testMatch: /tracking-protection\.spec\.ts/,
+      use: {
+        ...devices['Desktop Firefox'],
+        launchOptions: {
+          firefoxUserPrefs: {
+            'privacy.trackingprotection.enabled': true,
+            'urlclassifier.trackingTable': 'moztest-track-simple',
+          },
+        },
+      },
+    },
   ],
 })

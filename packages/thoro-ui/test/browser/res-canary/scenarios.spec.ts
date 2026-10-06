@@ -6,7 +6,7 @@ const CLOSED = 'http://127.0.0.1:4175'
 
 // The harness is a module script, which runs before the load event goto() waits for.
 // Only page.evaluate is used: it goes through the automation protocol, not the page's (blocked) eval.
-async function open(page: Page, csp: 'allowed' | 'foreign' | 'own-blocks' | 'strict'): Promise<void> {
+async function open(page: Page, csp: 'allowed' | 'foreign' | 'own-blocks' | 'strict' | 'no-connect'): Promise<void> {
   await page.goto(`/page?csp=${csp}&script=res-canary-harness`)
 }
 
@@ -74,10 +74,7 @@ test.describe('probes', () => {
       await expect.poll(() => status(page)).toBe('ok')
     })
 
-    test(`${type} probe: refused → load-failed`, async ({ browserName, page }) => {
-      // Known bug, listed in the README: Firefox fires `load` on a preload link whatever happens to the
-      // request (refused, blocked, 403), so these probes report ok there. Remove once they're fixed.
-      test.fail(browserName === 'firefox' && (type === 'script' || type === 'style'))
+    test(`${type} probe: refused → load-failed`, async ({ page }) => {
       await open(page, 'allowed')
       await page.evaluate(probe => harness.start({ probe }), { type, url: CLOSED + path })
       await expect.poll(() => status(page)).toBe('load-failed')
@@ -92,5 +89,52 @@ test.describe('probes', () => {
     })
     expect(await status(page)).toBe('unknown')
     await expect.poll(() => status(page), { timeout: 5000 }).toBe('load-failed')
+  })
+})
+
+test.describe('403 block pages', () => {
+  for (const { path, type } of [
+    { path: '/blocked.js', type: 'script' },
+    { path: '/blocked.css', type: 'style' },
+  ] as const) {
+    test(`${type} probe: a proxy's 403 page → load-failed`, async ({ browserName, page }) => {
+      // Known gap, listed in the README: a fetch counts any HTTP answer as reachable, and Firefox's preload
+      // fires load anyway, so Firefox's script probe misses an error page.
+      test.fail(browserName === 'firefox' && type === 'script')
+      await page.route(`${VENDOR}/blocked.*`, route =>
+        route.fulfill({ body: '<h1>Blocked by policy</h1>', contentType: 'text/html', status: 403 }),
+      )
+      await open(page, 'allowed')
+      await page.evaluate(probe => harness.start({ probe }), { type, url: VENDOR + path })
+      await expect.poll(() => status(page)).toBe('load-failed')
+    })
+  }
+})
+
+test.describe('eager checks', () => {
+  test('a reachable vendor origin → ok', async ({ page }) => {
+    await open(page, 'allowed')
+    await page.evaluate(origins => harness.start({ lazy: false, origins }), [VENDOR])
+    await expect.poll(() => status(page)).toBe('ok')
+  })
+
+  test('a refused vendor origin → load-failed, in every engine', async ({ page }) => {
+    await open(page, 'allowed')
+    await page.evaluate(origins => harness.start({ banner: true, lazy: false, origins }), [CLOSED])
+    await expect.poll(() => status(page)).toBe('load-failed')
+    await expect.poll(() => bannerText(page)).toContain('Widget')
+  })
+
+  test('your CSP without connect-src for the vendor → inconclusive, not reported as yours', async ({ page }) => {
+    await open(page, 'no-connect')
+    await page.evaluate(origins => harness.start({ lazy: false, origins }), [VENDOR])
+    // The check really was blocked by our own connect-src…
+    await expect
+      .poll(() => page.evaluate(() => harness.violations))
+      .toContainEqual({ blockedURI: `${VENDOR}/`, directive: 'connect-src' })
+    // …and once it has had time to settle, it changed nothing.
+    await page.waitForTimeout(300)
+    expect(await status(page)).toBe('unknown')
+    expect(await page.evaluate(() => harness.own)).toEqual([])
   })
 })

@@ -34,6 +34,19 @@ const OWN_WITHOUT_VENDOR = [
   `connect-src 'self' ${OWN_MARKER}`,
 ].join('; ')
 
+// Our own policy, allowing the vendor everywhere except connect-src, as many apps do.
+const OWN_WITHOUT_CONNECT = [
+  "default-src 'self'",
+  "script-src 'self'",
+  `script-src-elem 'self' ${VENDOR} ${CLOSED}`,
+  `style-src 'self' ${VENDOR} ${CLOSED}`,
+  `img-src 'self' ${VENDOR} ${CLOSED}`,
+  `connect-src 'self' ${OWN_MARKER}`,
+].join('; ')
+
+// Firefox's tracker test hosts, so the tracking-protection test reaches the check.
+const TRACKERS = `${OWN} http://trackertest.org`
+
 const STRICT = `${OWN}; require-trusted-types-for 'script'; trusted-types 'none'`
 
 const POLICIES: Record<string, string[]> = {
@@ -41,6 +54,8 @@ const POLICIES: Record<string, string[]> = {
   foreign: [OWN, FOREIGN],
   'own-blocks': [OWN_WITHOUT_VENDOR],
   strict: [STRICT],
+  'no-connect': [OWN_WITHOUT_CONNECT],
+  trackers: [TRACKERS],
 }
 
 const TYPES: Record<string, string> = {

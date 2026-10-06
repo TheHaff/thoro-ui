@@ -4,7 +4,13 @@ declare global {
   var harness: {
     own: unknown[]
     violations: Array<{ blockedURI: string; directive: string }>
-    start(options?: { banner?: boolean; probe?: HarnessProbe; probeTimeoutMs?: number }): void
+    start(options?: {
+      banner?: boolean
+      lazy?: boolean
+      origins?: string[]
+      probe?: HarnessProbe
+      probeTimeoutMs?: number
+    }): void
     loadScript(path: string): void
     loadImage(path: string): void
     status(): string
