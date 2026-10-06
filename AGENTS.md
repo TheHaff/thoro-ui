@@ -8,7 +8,8 @@ thoro-ui is a collection of small, dependency-free web components for compliance
 - **Canary spec:** [`docs/specs/2026-09-29-res-canary-design.md`](docs/specs/2026-09-29-res-canary-design.md)
 - **React variant spec:** [`docs/specs/2026-10-02-res-canary-react-design.md`](docs/specs/2026-10-02-res-canary-react-design.md)
 - **Docs site spec:** [`docs/specs/2026-10-02-docs-site-design.md`](docs/specs/2026-10-02-docs-site-design.md) — the site at thoro.dev.
-- **Implementation plans:** [`docs/plans/2026-10-01-res-canary.md`](docs/plans/2026-10-01-res-canary.md), [`docs/plans/2026-10-02-res-canary-react.md`](docs/plans/2026-10-02-res-canary-react.md) and [`docs/plans/2026-10-02-docs-site.md`](docs/plans/2026-10-02-docs-site.md), all done — each task has files, code, tests and commands; do them in order.
+- **Eager checks spec:** [`docs/specs/2026-10-05-res-canary-eager-design.md`](docs/specs/2026-10-05-res-canary-eager-design.md) — start-up checks, `lazy`, Firefox-safe probes.
+- **Implementation plans:** [`docs/plans/2026-10-01-res-canary.md`](docs/plans/2026-10-01-res-canary.md), [`docs/plans/2026-10-02-res-canary-react.md`](docs/plans/2026-10-02-res-canary-react.md), [`docs/plans/2026-10-02-docs-site.md`](docs/plans/2026-10-02-docs-site.md) and [`docs/plans/2026-10-05-res-canary-eager.md`](docs/plans/2026-10-05-res-canary-eager.md), all done — each task has files, code, tests and commands; do them in order.
 
 If a plan and a spec disagree, the spec wins — flag the conflict to the maintainer instead of silently picking one. Don't reopen the decisions recorded in the specs' decision tables without a new reason.
 
@@ -34,10 +35,10 @@ docs/specs, docs/plans
 - **The maintainer makes every commit.** Never run `git add`, `git commit` or `git push`. End each task by listing the changed files and proposing a conventional commit message (`feat|fix|test|build|docs|chore: …`).
 - **This repo is public.** Never write the names of companies, customers or vendors from the maintainer's other work into it — not in code, tests, docs or commit messages. Examples and tests use `*.example`, `*.invalid` and `127.0.0.1` hosts only.
 - **Zero runtime dependencies.** React is an optional peer dependency, imported only by `/react` entries. Dev dependencies are pinned to exact versions. Shared tooling goes in the root (`pnpm add -D -E -w …`); tools only one package uses go in that package (`pnpm -C packages/thoro-ui add -D -E …`). Use pnpm, never npm or yarn.
-- **Everything in `packages/thoro-ui/src/` must run under the strictest CSP** (canary spec §8): constructed stylesheets only, DOM built with `createElement`/`createElementNS`/`textContent`, no `innerHTML`, no `eval`/`new Function`/string timers, no network requests other than configured probes. React code included: no `style` props, no `dangerouslySetInnerHTML`.
+- **Everything in `packages/thoro-ui/src/` must run under the strictest CSP** (canary spec §8): constructed stylesheets only, DOM built with `createElement`/`createElementNS`/`textContent`, no `innerHTML`, no `eval`/`new Function`/string timers, no network requests other than probes and the start-up checks (eager spec). React code included: no `style` props, no `dangerouslySetInnerHTML`.
 - **Nothing touches `window`, `document` or `customElements` at import time.**
 - **Collection names** (collection spec §2): tags `thoro-<name>`, events `<name>-<action>`, storage keys `thoro-ui:<name>:<what>`, theme variables `--thoro-*`.
-- **Each component has its own size budget**, set in its spec and enforced by `pnpm size`. Don't raise one without the maintainer's agreement; trim first. Canary: core ≤ 2 KB, element ≤ 4 KB gzip.
+- **Each component has its own size budget**, set in its spec and enforced by `pnpm size`. Don't raise one without the maintainer's agreement; trim first. Canary: core ≤ 2.5 KB, element ≤ 4 KB gzip.
 - **Publishing to npm is the maintainer's step.** Never run `npm publish` / `pnpm publish`.
 
 ## Commands

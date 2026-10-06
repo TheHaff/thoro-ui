@@ -82,7 +82,6 @@ const canary = createCanary({
       label: 'Support chat',
       impact: "The support chat bubble won't appear.",
       origins: ['https://widget.chat.example'],
-      probe: { type: 'script', url: 'https://widget.chat.example/loader.js' },
     },
   ],
 })
@@ -144,6 +143,11 @@ export function Layout({ children }) {
                 <td>yes</td>
               </tr>
               <tr>
+                <td>At <code>start()</code>, a check of a vendor origin is refused or goes silent</td>
+                <td><code>load-failed</code></td>
+                <td>yes</td>
+              </tr>
+              <tr>
                 <td>A startup probe fails or goes silent</td>
                 <td><code>load-failed</code></td>
                 <td>yes</td>
@@ -197,6 +201,10 @@ export function Layout({ children }) {
                 </th>
                 <td>Silence that counts as blocked. Default <code>15000</code>; <code>0</code> turns it off.</td>
               </tr>
+              <tr>
+                <th scope="row"><code>lazy</code></th>
+                <td>Default <code>false</code>: check every vendor origin at <code>start()</code>.</td>
+              </tr>
             </tbody>
           </table>
 
@@ -216,9 +224,13 @@ export function Layout({ children }) {
               <tr>
                 <th scope="row"><code>probe</code></th>
                 <td>
-                  Optional startup check: <code>script</code>, <code>style</code>, <code>image</code>,
-                  <code>fetch</code> or <code>custom</code>.
+                  Optional startup check that replaces the automatic one: <code>script</code>, <code>style</code>,
+                  <code>image</code>, <code>fetch</code> or <code>custom</code>.
                 </td>
+              </tr>
+              <tr>
+                <th scope="row"><code>lazy</code></th>
+                <td>Skip the automatic start-up check for this feature.</td>
               </tr>
             </tbody>
           </table>
@@ -300,8 +312,12 @@ thoro-res-canary,
             <li>Call <code>start()</code> early: blocks before it are missed (probes still catch them).</li>
             <li><code>load-failed</code> also covers vendor outages, so the default text says "usually".</li>
             <li>
-              Chrome logs an "unused preload" warning for <code>script</code> and <code>style</code> probes; a
-              <code>fetch</code> probe avoids it.
+              Chrome logs an "unused preload" warning for <code>script</code> probes; a <code>fetch</code> probe avoids
+              it.
+            </li>
+            <li>
+              Eager checks need your vendors in <code>connect-src</code>; without it they stay silent, but your CSP
+              reports get one entry per origin.
             </li>
           </ul>
         </section>

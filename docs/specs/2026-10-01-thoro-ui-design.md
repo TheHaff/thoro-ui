@@ -59,7 +59,7 @@ Exports — one entry per component, no root entry:
 - Only `*/element.js` files (they register the tag) and the CSS files have side effects; every core entry and every React entry is pure.
 - React is an optional peer: only the `/react` entries import it (added 2026-10-02, §2).
 - Shared internals (`src/shared/`, created when a second component needs one) become shared chunks that load only if an imported entry uses them.
-- Size budgets stay per entry: canary core ≤ 2 KB, element ≤ 4 KB gzip.
+- Size budgets stay per entry: canary core ≤ 2.5 KB, element ≤ 4 KB gzip.
 - **To verify in the first implementation task:** `vp pack` writes nested entries as `dist/res-canary/index.js`, not as a flattened name.
 
 ## 2. Rules every component follows (approved)

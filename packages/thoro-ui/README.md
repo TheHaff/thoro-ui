@@ -41,11 +41,11 @@ Shadow DOM keeps your page's CSS out; each component also exposes `::part()` nam
 
 Your own Content Security Policy (CSP) allows your support chat, your e-signature SDK, your CDN. Some users still can't load them: a browser extension adds a stricter CSP, a corporate proxy injects one, or an ad blocker or firewall drops the request. Your app isn't told; the user just sees something missing. The canary notices, explains what won't work, and hands them the allowlist.
 
-Core ≤ 2 KB, element ≤ 4 KB (gzip).
+Core ≤ 2.5 KB, element ≤ 4 KB (gzip).
 
 ### Quick start
 
-Call `start()` as early as possible — before you load any third-party script.
+Call `start()` as early as possible — before you load any third-party script. It checks every vendor origin straight away, so a block shows before your users run into it.
 
 ```js
 import { createCanary } from '@thoro/ui/res-canary'
@@ -59,7 +59,6 @@ const canary = createCanary({
       label: 'Support chat',
       impact: "The support chat bubble won't appear.",
       origins: ['https://widget.chat.example'],
-      probe: { type: 'script', url: 'https://widget.chat.example/loader.js' },
     },
   ],
 })
@@ -70,13 +69,14 @@ mountBanner(canary)
 
 ### How it detects a block
 
-| Signal                                                                                          | Status        | Shown to the user?                                   |
-| ----------------------------------------------------------------------------------------------- | ------------- | ---------------------------------------------------- |
-| A CSP violation from a policy that is **not** yours (extension, proxy)                          | `foreign-csp` | yes                                                  |
-| A `<script>`, `<img>`, `<link>`, `<video>`, `<audio>` or `<source>` from a feature origin fails | `load-failed` | yes                                                  |
-| A startup probe fails or doesn't answer within `probeTimeoutMs`                                 | `load-failed` | yes                                                  |
-| `canary.report(id)` — for WebRTC, `fetch`, anything else                                        | `load-failed` | yes                                                  |
-| A CSP violation from **your own** policy                                                        | `own-csp`     | no — `onOwnPolicyViolation` is called: it's your bug |
+| Signal                                                                                           | Status        | Shown to the user?                                   |
+| ------------------------------------------------------------------------------------------------ | ------------- | ---------------------------------------------------- |
+| At `start()`, a check of each vendor origin is refused or doesn't answer within `probeTimeoutMs` | `load-failed` | yes                                                  |
+| A CSP violation from a policy that is **not** yours (extension, proxy)                           | `foreign-csp` | yes                                                  |
+| A `<script>`, `<img>`, `<link>`, `<video>`, `<audio>` or `<source>` from a feature origin fails  | `load-failed` | yes                                                  |
+| A startup probe fails or doesn't answer within `probeTimeoutMs`                                  | `load-failed` | yes                                                  |
+| `canary.report(id)` — for WebRTC, `fetch`, anything else                                         | `load-failed` | yes                                                  |
+| A CSP violation from **your own** policy                                                         | `own-csp`     | no — `onOwnPolicyViolation` is called: it's your bug |
 
 A status only moves up (`unknown → ok → load-failed → foreign-csp → own-csp`), so the most specific reason wins whatever order events arrive in.
 
@@ -84,15 +84,22 @@ A status only moves up (`unknown → ok → load-failed → foreign-csp → own-
 
 Browsers give a page no way to read its own CSP headers, so the canary recognises yours inside each violation's `originalPolicy`. Pass a string that only your policy contains (your API host works well), a `RegExp`, or a function `(policy) => boolean`. It is required: without it, every CSP block would be ambiguous.
 
+#### Eager checks and `connect-src`
+
+`start()` sends one `HEAD` request (`no-cors`, no cookies, no referrer) to the root of each vendor origin, unless the feature has its own `probe` or is `lazy`. Any answer means the vendor is reachable. Wildcard (`https://*.vendor.example`) and `ws(s)` origins can't be checked this way, so they're lazy.
+
+These checks need the origins in your `connect-src`. If your policy doesn't allow them, the check is inconclusive — nothing is shown and `onOwnPolicyViolation` isn't called — but the browser still sends your CSP reporting endpoint one violation report per origin per page load. Add the origins to `connect-src`, or set `lazy: true` on those features (or on `createCanary` for all of them).
+
 #### Features
 
-| field     | meaning                                                                                                                                                                                       |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`      | Stable id, used by `report()` and to remember dismissal.                                                                                                                                      |
-| `label`   | Short name shown to the user.                                                                                                                                                                 |
-| `impact`  | One sentence on what won't work.                                                                                                                                                              |
-| `origins` | CSP host-source syntax: `https://host`, `https://*.host`, `wss://host:8443`. No paths. Also the list IT is asked to allow.                                                                    |
-| `probe`   | Optional startup check: `script` or `style` (preloads, never runs it), `image`, `fetch` (`no-cors`; needs the origin in your `connect-src`), or `custom` (`run(signal) => Promise<boolean>`). |
+| field     | meaning                                                                                                                                                                                                                                                                     |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`      | Stable id, used by `report()` and to remember dismissal.                                                                                                                                                                                                                    |
+| `label`   | Short name shown to the user.                                                                                                                                                                                                                                               |
+| `impact`  | One sentence on what won't work.                                                                                                                                                                                                                                            |
+| `origins` | CSP host-source syntax: `https://host`, `https://*.host`, `wss://host:8443`. No paths. Also the list IT is asked to allow.                                                                                                                                                  |
+| `probe`   | Optional startup check that replaces the automatic one: `script` (preload plus a `fetch`; never runs it), `style` (a stylesheet that never applies), `image`, `fetch` (`no-cors`; needs the origin in your `connect-src`), or `custom` (`run(signal) => Promise<boolean>`). |
+| `lazy`    | Skip the automatic start-up check for this feature. Overrides the `lazy` option.                                                                                                                                                                                            |
 
 ### The element
 
@@ -164,7 +171,7 @@ canary.subscribe(fn)  // returns unsubscribe
 canary.getSnapshot()  // { blocked, dismissed, statuses }
 ```
 
-Options: `features`, `ownPolicy` (required), `onChange`, `onOwnPolicyViolation`, `storage` (default `localStorage`; `null` = this page only), `storageKey` (default `thoro-ui:res-canary:dismissed`), `probeTimeoutMs` (default `15000`; `0` disables).
+Options: `features`, `ownPolicy` (required), `onChange`, `onOwnPolicyViolation`, `storage` (default `localStorage`; `null` = this page only), `storageKey` (default `thoro-ui:res-canary:dismissed`), `probeTimeoutMs` (default `15000`; `0` disables), `lazy` (default `false`: check every origin at `start()`).
 
 ### Limitations
 
@@ -173,8 +180,8 @@ Options: `features`, `ownPolicy` (required), `onChange`, `onOwnPolicyViolation`,
 - **`fetch`, XHR, WebSocket, WebRTC:** not detected automatically — call `canary.report(id)` from your error handling.
 - **Before `start()`:** violations that happened earlier are missed. Probes still catch a blocked host.
 - **`load-failed` includes vendor outages.** The default text says "usually" for that reason.
-- **Chrome logs an "unused preload" warning** for `script` and `style` probes. Use a `fetch` probe to avoid it.
-- **In Firefox, `script` and `style` probes don't detect a block.** Firefox fires `load` on a preload link even when the request is refused, cancelled by a blocker or answered with an error page, so these probes report the vendor as reachable there. Chromium and WebKit report it. `image` and `fetch` probes work in every browser.
+- **Chrome logs an "unused preload" warning** for `script` probes. Use a `fetch` probe to avoid it.
+- **A proxy's error page counts as reachable** for the eager checks, `fetch` probes and the `fetch` half of `script` probes: a `no-cors` request can't see the status. In Firefox a `script` probe relies on that half, so it misses an error page there; `style` and `image` probes catch it in every browser.
 - **An extension that hides an element** without blocking its request can't be detected.
 
 ## Browser support

@@ -1,6 +1,6 @@
 # res-canary — design
 
-- **Status:** approved 2026-09-29; updated 2026-10-01 to become a thoro-ui component; implemented 2026-10-02. A native React variant is specified separately in [`2026-10-02-res-canary-react-design.md`](2026-10-02-res-canary-react-design.md) (implemented).
+- **Status:** approved 2026-09-29; updated 2026-10-01 to become a thoro-ui component; implemented 2026-10-02. A native React variant is specified separately in [`2026-10-02-res-canary-react-design.md`](2026-10-02-res-canary-react-design.md) (implemented). Eager checks, `lazy` and the Firefox-safe script and style probes are specified in [`2026-10-05-res-canary-eager-design.md`](2026-10-05-res-canary-eager-design.md) (implemented).
 - **Package:** `@thoro/ui`, entries `@thoro/ui/res-canary` and `@thoro/ui/res-canary/element`
 - **Element:** `<thoro-res-canary>`
 - **License:** MIT
@@ -348,7 +348,7 @@ Packaging, tooling and CI follow the [collection spec](2026-10-01-thoro-ui-desig
 
 - `exports`: `"./res-canary"` → core (`dist/res-canary/index.js`), `"./res-canary/element"` → element (`dist/res-canary/element.js`); since 2026-10-02 also `"./res-canary/react"` and `"./res-canary/react.css"` (React spec §2). Only the element entry and the CSS file have side effects.
 - The published types include the global `HTMLElementTagNameMap['thoro-res-canary']` and `HTMLElementEventMap` entries for `res-canary-dismiss` and `res-canary-copy`, so `document.createElement('thoro-res-canary')` and `addEventListener('res-canary-dismiss', …)` are typed.
-- Size budget enforced in CI: core ≤ 2 KB gzip, element (including core) ≤ 4 KB gzip; React entry ≤ 2 KB gzip, measured without React (React spec §2).
+- Size budget enforced in CI: core ≤ 2.5 KB gzip (raised from 2 KB for eager checks, 2026-10-06), element (including core) ≤ 4 KB gzip; React entry ≤ 2 KB gzip, measured without React (React spec §2).
 - Browser support: current evergreen browsers; Safari 16.4+ (first version with `adoptedStyleSheets`).
 - Publishing to npm (with provenance) is a manual, maintainer-approved step.
 
@@ -406,7 +406,7 @@ Settled during design. Revisit only with a new reason.
 ## 13. Definition of done (v1)
 
 - [ ] Every unit test, the server-import check and all browser scenarios pass in Chromium, Firefox and WebKit.
-- [x] `pnpm size` passes: core ≤ 2 KB, element ≤ 4 KB (gzip).
+- [x] `pnpm size` passes: core ≤ 2.5 KB, element ≤ 4 KB (gzip).
 - [x] `pnpm pack` in `packages/thoro-ui` contains only `dist/`, `package.json`, `README.md` and `LICENSE`.
 - [ ] README covers everything in section 11; examples run (vanilla) and type-check (React).
 - [ ] CI is green on GitHub.

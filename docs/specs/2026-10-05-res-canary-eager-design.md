@@ -1,6 +1,6 @@
 # res-canary eager checks — design
 
-- **Status:** approved by the maintainer, 2026-10-06. Not yet implemented.
+- **Status:** approved by the maintainer, 2026-10-06; implemented 2026-10-06. Firefox results come from CI.
 - **Amends:** the canary spec [`2026-09-29-res-canary-design.md`](2026-09-29-res-canary-design.md) — §5 (types), §6 (detection: probes, violations) and §12 (decisions). Everything not named here is unchanged.
 - **Ships as:** `0.2.0-beta.0`. Eager by default changes what `start()` does for `0.1.0-beta.0` users.
 
