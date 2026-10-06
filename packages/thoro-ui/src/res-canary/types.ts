@@ -16,6 +16,8 @@ export type Feature = {
   /** CSP host-source syntax: 'https://widget.vendor.example', 'https://*.vendor.example', 'wss://rtc.vendor.example'. */
   origins: readonly string[]
   probe?: Probe
+  /** Skip the automatic start-up check of this feature's origins. Overrides CanaryOptions.lazy. */
+  lazy?: boolean
 }
 
 export type BlockedFeature = Feature & { reason: BlockedReason }
@@ -48,6 +50,8 @@ export type CanaryOptions = {
   storageKey?: string
   /** Default: 15000. 0 disables the timeout. */
   probeTimeoutMs?: number
+  /** Default false: start() checks every vendor origin it can. true = only the probes you configure. */
+  lazy?: boolean
 }
 
 // Function-typed properties, not methods: none of them uses `this`, so they can be passed around

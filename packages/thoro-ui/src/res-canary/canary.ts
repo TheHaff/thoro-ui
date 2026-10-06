@@ -1,6 +1,6 @@
 import { createDismissalStore } from './dismissal.ts'
-import { matchesOrigin, parseOriginPattern, type OriginPattern } from './origins.ts'
-import { runProbe } from './probes.ts'
+import { checkUrl, matchesOrigin, parseOriginPattern, type OriginPattern } from './origins.ts'
+import { checkOrigin, runProbe, type CheckResult } from './probes.ts'
 import { blockedFeatures, raiseStatus, signatureOf } from './status.ts'
 import type { Canary, CanaryOptions, Feature, Snapshot, Status } from './types.ts'
 
@@ -16,6 +16,9 @@ export function createCanary(options: CanaryOptions): Canary {
   )
   let snapshot = buildSnapshot()
   let controller: AbortController | null = null
+  // URLs the canary fetches itself, and those of them the app's own connect-src blocked (eager spec §3).
+  const ownChecks = new Set<string>()
+  const blockedChecks = new Set<string>()
 
   function buildSnapshot(): Snapshot {
     const blocked = blockedFeatures(options.features, statuses)
@@ -56,6 +59,11 @@ export function createCanary(options: CanaryOptions): Canary {
     if (event.disposition === 'report') return
     const policy = event.originalPolicy ?? ''
     const own = isOwnPolicy(policy)
+    // The canary's own check, blocked by your connect-src: inconclusive, and not your bug to report.
+    if (own && event.effectiveDirective === 'connect-src' && ownChecks.has(event.blockedURI)) {
+      blockedChecks.add(event.blockedURI)
+      return
+    }
     for (const { feature } of matching(event.blockedURI)) {
       setStatus(feature.id, own ? 'own-csp' : 'foreign-csp')
       if (own) {
@@ -83,10 +91,34 @@ export function createCanary(options: CanaryOptions): Canary {
       // Resource errors don't bubble, but they pass through window in the capture phase.
       window.addEventListener('error', onResourceError, { capture: true, signal })
       const timeoutMs = options.probeTimeoutMs ?? 15_000
-      for (const { feature } of compiled) {
-        if (!feature.probe) continue
-        void runProbe(feature.probe, timeoutMs, signal).then(ok => {
-          if (!signal.aborted) setStatus(feature.id, ok ? 'ok' : 'load-failed')
+      const ownBlocked = (url: string): boolean => blockedChecks.has(url)
+      // One request per origin, however many features list it.
+      const shared = new Map<string, Promise<CheckResult>>()
+      const check = (url: string): Promise<CheckResult> => {
+        ownChecks.add(url)
+        let result = shared.get(url)
+        if (!result) {
+          result = checkOrigin(url, timeoutMs, signal, ownBlocked)
+          shared.set(url, result)
+        }
+        return result
+      }
+      for (const { feature, patterns } of compiled) {
+        const { probe } = feature
+        let results: Array<Promise<CheckResult>> = []
+        if (probe) {
+          if (probe.type === 'script') ownChecks.add(new URL(probe.url).href)
+          results = [runProbe(probe, timeoutMs, signal, ownBlocked)]
+        } else if (!(feature.lazy ?? options.lazy)) {
+          results = patterns.flatMap(pattern => {
+            const url = checkUrl(pattern)
+            return url ? [check(url)] : []
+          })
+        }
+        void Promise.all(results).then(values => {
+          if (signal.aborted) return
+          if (values.includes(false)) setStatus(feature.id, 'load-failed')
+          else if (values.includes(true)) setStatus(feature.id, 'ok')
         })
       }
     },

@@ -20,15 +20,27 @@ const sign: Feature = {
 const started: Canary[] = []
 
 function setup(overrides: Partial<CanaryOptions> = {}): Canary {
-  const canary = createCanary({ features: [chat, sign], ownPolicy: 'api.own.example', storage: null, ...overrides })
+  // lazy: these tests cover what start() does besides the eager checks, which have their own block below.
+  const canary = createCanary({
+    features: [chat, sign],
+    lazy: true,
+    ownPolicy: 'api.own.example',
+    storage: null,
+    ...overrides,
+  })
   canary.start()
   started.push(canary)
   return canary
 }
 
-function violate(blockedURI: string, originalPolicy: string, disposition: 'enforce' | 'report' = 'enforce'): void {
+function violate(
+  blockedURI: string,
+  originalPolicy: string,
+  disposition: 'enforce' | 'report' = 'enforce',
+  effectiveDirective = 'script-src-elem',
+): void {
   const event = new Event('securitypolicyviolation', { bubbles: true })
-  Object.assign(event, { blockedURI, disposition, effectiveDirective: 'script-src-elem', originalPolicy })
+  Object.assign(event, { blockedURI, disposition, effectiveDirective, originalPolicy })
   document.dispatchEvent(event)
 }
 
@@ -291,5 +303,140 @@ describe('probes', () => {
         storage: null,
       }),
     ).toThrow(/outside its origins/)
+  })
+})
+
+describe('eager checks', () => {
+  const CHECK = { credentials: 'omit', method: 'HEAD', mode: 'no-cors', referrerPolicy: 'no-referrer' }
+  const pay: Feature = {
+    id: 'pay',
+    impact: "You can't pay.",
+    label: 'Payments',
+    origins: ['https://pay.example', 'https://cdn.pay.example'],
+  }
+  const refused = async (): Promise<Response> => {
+    throw new TypeError('Failed to fetch')
+  }
+
+  function stubFetch(
+    answer: (url: string, init: RequestInit) => Promise<Response> = async () => new Response(null),
+  ): ReturnType<typeof vi.fn> {
+    const fetch = vi.fn(answer)
+    vi.stubGlobal('fetch', fetch)
+    return fetch
+  }
+
+  // Long enough for every check here to settle, including the one-task wait after a refusal.
+  const settle = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 20))
+
+  it('is eager by default: start() checks a feature with no probe', async () => {
+    const fetch = stubFetch()
+    const canary = createCanary({ features: [chat], ownPolicy: 'api.own.example', storage: null })
+    canary.start()
+    started.push(canary)
+    await vi.waitFor(() => expect(canary.getSnapshot().statuses.chat).toBe('ok'))
+    expect(fetch).toHaveBeenCalledWith('https://widget.chat.example/', { ...CHECK, signal: expect.any(AbortSignal) })
+  })
+
+  it('skips wildcard origins, which have no host to ask', async () => {
+    const fetch = stubFetch()
+    const canary = setup({ lazy: false })
+    await vi.waitFor(() => expect(canary.getSnapshot().statuses).toEqual({ chat: 'ok', sign: 'unknown' }))
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('marks a feature load-failed when its check is refused', async () => {
+    stubFetch(refused)
+    const canary = setup({ lazy: false })
+    await vi.waitFor(() => expect(canary.getSnapshot().statuses.chat).toBe('load-failed'))
+    expect(canary.getSnapshot().blocked.map(feature => feature.id)).toEqual(['chat'])
+  })
+
+  it('lets a feature override the top-level lazy either way', async () => {
+    const fetch = stubFetch()
+    setup({ features: [{ ...chat, lazy: false }, pay], lazy: true })
+    setup({ features: [{ ...pay, lazy: true }], lazy: false })
+    await settle()
+    expect(fetch.mock.calls.map(([url]) => url)).toEqual(['https://widget.chat.example/'])
+  })
+
+  it('runs an explicit probe instead of the check, even on a lazy feature', async () => {
+    const fetch = stubFetch()
+    const canary = setup({
+      features: [{ ...chat, lazy: true, probe: { run: async () => false, type: 'custom' } }],
+      lazy: false,
+    })
+    await vi.waitFor(() => expect(canary.getSnapshot().statuses.chat).toBe('load-failed'))
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  // Review Focus 1
+  it('checks an origin once, however many features list it and however it is written', async () => {
+    const fetch = stubFetch()
+    const twin: Feature = { ...chat, id: 'twin', origins: ['https://WIDGET.chat.example:443'] }
+    const canary = setup({ features: [chat, twin], lazy: false })
+    await vi.waitFor(() => expect(canary.getSnapshot().statuses).toEqual({ chat: 'ok', twin: 'ok' }))
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
+  // Review Focus 3
+  it('fails a feature when any of its origins fails, and ignores its wildcard origins', async () => {
+    const fetch = stubFetch(async url => {
+      if (url === 'https://cdn.pay.example/') throw new TypeError('Failed to fetch')
+      return new Response(null)
+    })
+    const canary = setup({ features: [{ ...pay, origins: [...pay.origins, 'https://*.pay.example'] }], lazy: false })
+    await vi.waitFor(() => expect(canary.getSnapshot().statuses.pay).toBe('load-failed'))
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  // Review Focus 5 is the second case.
+  const timings: Array<[string, (fire: () => void) => void]> = [
+    ['before the refusal', fire => fire()],
+    ['a few microtasks after the refusal', fire => queueMicrotask(() => queueMicrotask(() => queueMicrotask(fire)))],
+  ]
+
+  it.each(timings)(
+    'treats a check your own connect-src blocks as inconclusive (violation %s)',
+    async (_when, schedule) => {
+      const onOwnPolicyViolation = vi.fn()
+      const fetch = stubFetch(async url => {
+        schedule(() => violate(url, OWN, 'enforce', 'connect-src'))
+        throw new TypeError('Failed to fetch')
+      })
+      const canary = setup({ lazy: false, onOwnPolicyViolation })
+      await settle()
+      // The check really ran and was refused; only the violation made it inconclusive.
+      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(canary.getSnapshot().statuses.chat).toBe('unknown')
+      expect(onOwnPolicyViolation).not.toHaveBeenCalled()
+    },
+  )
+
+  // Review Focus 4
+  it("still reports your own violations for a checked vendor that aren't the check", async () => {
+    const onOwnPolicyViolation = vi.fn()
+    stubFetch()
+    const canary = setup({ lazy: false, onOwnPolicyViolation })
+    await vi.waitFor(() => expect(canary.getSnapshot().statuses.chat).toBe('ok'))
+    violate('https://widget.chat.example/api', OWN, 'enforce', 'connect-src')
+    expect(canary.getSnapshot().statuses.chat).toBe('own-csp')
+    expect(onOwnPolicyViolation).toHaveBeenCalledTimes(1)
+  })
+
+  // Review Focus 2
+  it('aborts pending checks on stop() and checks again after start()', async () => {
+    const signals: AbortSignal[] = []
+    stubFetch((_url, init) => {
+      if (init.signal) signals.push(init.signal)
+      return new Promise<Response>(() => {})
+    })
+    const canary = setup({ lazy: false, probeTimeoutMs: 0 })
+    await vi.waitFor(() => expect(signals).toHaveLength(1))
+    canary.stop()
+    expect(signals[0].aborted).toBe(true)
+    canary.start()
+    await vi.waitFor(() => expect(signals).toHaveLength(2))
+    expect(signals[1].aborted).toBe(false)
   })
 })
