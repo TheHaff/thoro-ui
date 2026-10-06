@@ -37,3 +37,12 @@ export function matchesOrigin(url: string, pattern: OriginPattern): boolean {
   const host = parsed.hostname.toLowerCase()
   return pattern.wildcard ? host.endsWith(`.${pattern.host}`) : host === pattern.host
 }
+
+/**
+ * The URL the automatic start-up check fetches for an origin, or null when there is no single host to ask:
+ * a wildcard, or a ws(s) origin, which fetch can't reach and whose connect-src entry wouldn't cover https.
+ */
+export function checkUrl(pattern: OriginPattern): string | null {
+  if (pattern.wildcard || !pattern.scheme.startsWith('http')) return null
+  return new URL(`${pattern.scheme}://${pattern.host}:${pattern.port}/`).href
+}

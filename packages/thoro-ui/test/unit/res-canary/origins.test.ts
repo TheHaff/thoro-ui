@@ -1,4 +1,4 @@
-import { matchesOrigin, parseOriginPattern } from '../../../src/res-canary/origins.ts'
+import { checkUrl, matchesOrigin, parseOriginPattern } from '../../../src/res-canary/origins.ts'
 
 const matches = (url: string, origin: string): boolean => matchesOrigin(url, parseOriginPattern(origin))
 
@@ -60,4 +60,22 @@ describe('matchesOrigin', () => {
   it.each(['inline', 'eval', 'wasm-eval', '', 'data:text/plain,hi'])('never matches the non-URL value %j', value => {
     expect(matches(value, 'https://vendor.example')).toBe(false)
   })
+})
+
+describe('checkUrl', () => {
+  it.each([
+    ['https://widget.chat.example', 'https://widget.chat.example/'],
+    ['https://WIDGET.chat.example:443', 'https://widget.chat.example/'],
+    ['https://api.vendor.example:8443', 'https://api.vendor.example:8443/'],
+    ['http://127.0.0.1:4174', 'http://127.0.0.1:4174/'],
+  ])('checks %s at %s', (origin, url) => {
+    expect(checkUrl(parseOriginPattern(origin))).toBe(url)
+  })
+
+  it.each(['https://*.vendor.example', 'wss://rtc.vendor.example', 'ws://rtc.vendor.example:8080'])(
+    'has nothing to check for %s',
+    origin => {
+      expect(checkUrl(parseOriginPattern(origin))).toBeNull()
+    },
+  )
 })

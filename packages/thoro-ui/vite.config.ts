@@ -4,6 +4,11 @@ import { defineConfig } from 'vite-plus'
 export default defineConfig({
   test: {
     environment: 'happy-dom',
+    // happy-dom would fetch stylesheets over the network. With loading off it settles a stylesheet link
+    // inside append(), before the probe listens, so style-probe tests dispatch load/error themselves.
+    environmentOptions: {
+      happyDOM: { settings: { disableCSSFileLoading: true, handleDisabledFileLoadingAsSuccess: true } },
+    },
     globals: true,
     // Vitest's default pattern would also pick up the Playwright specs in test/browser.
     include: ['test/unit/**/*.test.{ts,tsx}'],
