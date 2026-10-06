@@ -76,6 +76,7 @@ Verified on 2026-09-29 in a throwaway check before the first plan was written; t
 - **happy-dom 20.14.5:**
   - refuses to load `<script src>` ("JavaScript file loading is disabled") — unit tests use `<img>` for element failures; real script loading is covered by Playwright;
   - never fires `load`/`error` for preload links or images by itself — tests dispatch those events by hand, which keeps them deterministic;
+  - fetches `<link rel="stylesheet">` over the real network unless told not to; the unit tests run with CSS file loading off and handled as success, which makes it fire `load` synchronously inside `append()` — the style probe listens after `append()`, so its tests dispatch their own `load`/`error`;
   - supports constructed stylesheets and `adoptedStyleSheets`, upgrading an element whose properties were set before definition, `addEventListener`'s `signal` option, `Intl.ListFormat`, and `navigator.clipboard` (spy on `writeText`);
   - a synthetic `securitypolicyviolation` works as `new Event(…)` plus `Object.assign` for `blockedURI`, `originalPolicy`, `disposition` and `effectiveDirective`.
 - **Playwright on strict-CSP pages:** the plan uses only `page.goto`, `page.evaluate` and `expect.poll`, and avoids `page.waitForFunction` as a precaution. If a strict-page test reports a `script-src`/`trusted-types` violation with `blockedURI` `eval`, suspect the test tooling before the package.

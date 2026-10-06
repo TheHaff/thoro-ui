@@ -424,6 +424,42 @@ describe('eager checks', () => {
     expect(onOwnPolicyViolation).toHaveBeenCalledTimes(1)
   })
 
+  it('marks load-failed as soon as one origin is refused, without waiting for a silent one', async () => {
+    stubFetch(url => (url === 'https://cdn.pay.example/' ? refused() : new Promise<Response>(() => {})))
+    const canary = setup({ features: [pay], lazy: false, probeTimeoutMs: 0 })
+    await vi.waitFor(() => expect(canary.getSnapshot().statuses.pay).toBe('load-failed'))
+  })
+
+  it('recognises its own check when the browser reports the origin without the trailing slash', async () => {
+    const onOwnPolicyViolation = vi.fn()
+    const fetch = stubFetch(async () => {
+      violate('https://widget.chat.example', OWN, 'enforce', 'connect-src')
+      throw new TypeError('Failed to fetch')
+    })
+    const canary = setup({ lazy: false, onOwnPolicyViolation })
+    await settle()
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(canary.getSnapshot().statuses.chat).toBe('unknown')
+    expect(onOwnPolicyViolation).not.toHaveBeenCalled()
+  })
+
+  // Pins that canary.ts registers the exact URL the script probe's fetch half requests (probes.ts): written
+  // with an upper-case host, it only matches if both sides normalise it the same way.
+  it('leaves a script probe to its preload when your own connect-src blocks its fetch', async () => {
+    const onOwnPolicyViolation = vi.fn()
+    stubFetch(async url => {
+      violate(url, OWN, 'enforce', 'connect-src')
+      throw new TypeError('Failed to fetch')
+    })
+    const canary = setup({
+      features: [{ ...chat, probe: { type: 'script', url: 'https://WIDGET.chat.example/loader.js' } }],
+      onOwnPolicyViolation,
+    })
+    document.head.querySelector('link[rel="preload"]')?.dispatchEvent(new Event('load'))
+    await vi.waitFor(() => expect(canary.getSnapshot().statuses.chat).toBe('ok'))
+    expect(onOwnPolicyViolation).not.toHaveBeenCalled()
+  })
+
   // Review Focus 2
   it('aborts pending checks on stop() and checks again after start()', async () => {
     const signals: AbortSignal[] = []

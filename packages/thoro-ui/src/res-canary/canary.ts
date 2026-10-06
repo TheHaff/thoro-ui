@@ -60,8 +60,16 @@ export function createCanary(options: CanaryOptions): Canary {
     const policy = event.originalPolicy ?? ''
     const own = isOwnPolicy(policy)
     // The canary's own check, blocked by your connect-src: inconclusive, and not your bug to report.
-    if (own && event.effectiveDirective === 'connect-src' && ownChecks.has(event.blockedURI)) {
-      blockedChecks.add(event.blockedURI)
+    // Normalised, in case a browser reports the root as 'https://vendor.example' without the slash.
+    // (Not URL.canParse: Safari 16.4, which the README supports, lacks it.)
+    let url = event.blockedURI
+    try {
+      url = new URL(url).href
+    } catch {
+      // 'inline', 'eval' and the like aren't URLs; they never match a check.
+    }
+    if (own && event.effectiveDirective === 'connect-src' && ownChecks.has(url)) {
+      blockedChecks.add(url)
       return
     }
     for (const { feature } of matching(event.blockedURI)) {
@@ -107,6 +115,7 @@ export function createCanary(options: CanaryOptions): Canary {
         const { probe } = feature
         let results: Array<Promise<CheckResult>> = []
         if (probe) {
+          // Must equal the URL the script probe's fetch half requests (probes.ts), or its block is reported as yours.
           if (probe.type === 'script') ownChecks.add(new URL(probe.url).href)
           results = [runProbe(probe, timeoutMs, signal, ownBlocked)]
         } else if (!(feature.lazy ?? options.lazy)) {
@@ -115,10 +124,15 @@ export function createCanary(options: CanaryOptions): Canary {
             return url ? [check(url)] : []
           })
         }
+        // A failure decides at once, without waiting for a silent origin; ok needs every answer. Statuses
+        // only move up, so an ok after a failure changes nothing.
+        for (const result of results) {
+          void result.then(value => {
+            if (!signal.aborted && value === false) setStatus(feature.id, 'load-failed')
+          })
+        }
         void Promise.all(results).then(values => {
-          if (signal.aborted) return
-          if (values.includes(false)) setStatus(feature.id, 'load-failed')
-          else if (values.includes(true)) setStatus(feature.id, 'ok')
+          if (!signal.aborted && values.includes(true)) setStatus(feature.id, 'ok')
         })
       }
     },

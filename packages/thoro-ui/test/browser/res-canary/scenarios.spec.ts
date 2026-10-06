@@ -125,6 +125,20 @@ test.describe('eager checks', () => {
     await expect.poll(() => bannerText(page)).toContain('Widget')
   })
 
+  test('a script probe your CSP blocks from fetching → its preload decides, not reported as yours', async ({
+    page,
+  }) => {
+    await open(page, 'no-connect')
+    await page.evaluate(probe => harness.start({ probe }), { type: 'script' as const, url: `${VENDOR}/widget.js` })
+    // The fetch half really was blocked by our own connect-src…
+    await expect
+      .poll(() => page.evaluate(() => harness.violations))
+      .toContainEqual({ blockedURI: `${VENDOR}/widget.js`, directive: 'connect-src' })
+    // …so the preload, which loads, decides.
+    await expect.poll(() => status(page)).toBe('ok')
+    expect(await page.evaluate(() => harness.own)).toEqual([])
+  })
+
   test('your CSP without connect-src for the vendor → inconclusive, not reported as yours', async ({ page }) => {
     await open(page, 'no-connect')
     await page.evaluate(origins => harness.start({ lazy: false, origins }), [VENDOR])
