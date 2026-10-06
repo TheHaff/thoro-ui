@@ -165,7 +165,7 @@ Browsers give a page no API to read its own CSP headers. The only way to tell "o
 
 **Element load failures** — `window.addEventListener('error', …, { capture: true })`. Resource errors do not bubble, but they pass through `window` in the capture phase. For `script`, `img`, `link`, `video`, `audio` and `source` targets, take the absolute URL (`href` for links; `currentSrc || src` for images and media; `src` otherwise), match it against `origins`, and mark the feature `load-failed`. Iframes are skipped (see Non-goals). Resource `error` events are not composed, so a failure inside a shadow root never reaches `window` and is not seen (verified 2026-10-02 in Chromium and WebKit); probes and `report()` cover those, and `securitypolicyviolation` events are composed, so CSP blocks there are still detected. The README lists this under Limitations.
 
-**Probes** — for each feature with a `probe`:
+**Probes** — for each feature with a `probe`. _Superseded in part (2026-10-06):_ `style` probes now load a stylesheet with `media="not all"`, `script` probes add a `fetch` of the same URL, and features without a probe get an automatic origin check — see [`2026-10-05-res-canary-eager-design.md`](2026-10-05-res-canary-eager-design.md) §1–§3, which wins where the two differ.
 
 | type     | mechanism                                                 | notes                                                                                                                       |
 | -------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
@@ -377,7 +377,7 @@ Packaging, tooling and CI follow the [collection spec](2026-10-01-thoro-ui-desig
 
 ## 11. Documentation and examples
 
-- README (the res-canary section of the package README, which is the npm page): what it does, quick start (banner in a few lines), choosing `ownPolicy`, the feature config, controlled vs uncontrolled, theming, API, and **Limitations**: iframes, `fetch`/WebSocket/WebRTC need `report()`, violations before `start()` are missed, `load-failed` also covers vendor outages, the Chrome unused-preload warning, Firefox not detecting blocks through `script` and `style` probes, extensions that hide elements without blocking them.
+- README (the res-canary section of the package README, which is the npm page): what it does, quick start (banner in a few lines), choosing `ownPolicy`, the feature config, controlled vs uncontrolled, theming, API, and **Limitations**: iframes, `fetch`/WebSocket/WebRTC need `report()`, violations before `start()` are missed, `load-failed` also covers vendor outages, the Chrome unused-preload warning, a proxy's error page counting as reachable for `fetch`-based checks (eager spec §5), extensions that hide elements without blocking them.
 - `examples/vanilla/` — a small Vite app (one HTML page and one module), run with `vp -C examples/vanilla dev`.
 - `examples/react/` — React 19: `<ResCanary>` from `@thoro/ui/res-canary/react`, and a custom UI via `useSyncExternalStore`. Type-checked in CI.
 - README React section (added 2026-10-02): installing React, the CSS import, the props, and how the React variant differs from the element (React spec §1).
@@ -422,4 +422,4 @@ Settled during design. Revisit only with a new reason.
 | Slow networks hit `probeTimeoutMs` and show a false positive                         | 15 s default; configurable; `0` disables.                                                                                          |
 | An extension blocks a vendor without CSP or a network error (e.g. hides the element) | Not detectable; documented as a limitation.                                                                                        |
 | Host calls `start()` after third-party scripts already failed                        | README quick start calls `start()` before anything else; `start()` also runs the probes, which catch a block the listeners missed. |
-| Core grows past the 2 KB budget                                                      | CI fails; trim error-message text before raising the limit, and only raise it with the maintainer's agreement.                     |
+| Core grows past the 2.5 KB budget                                                    | CI fails; trim error-message text before raising the limit, and only raise it with the maintainer's agreement.                     |

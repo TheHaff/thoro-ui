@@ -61,9 +61,9 @@ An explicit `fetch` probe keeps today's rule: blocked by the app's own policy â†
 
 ## 3. Inconclusive
 
-The core keeps the set of origins it is checking with its own `fetch` (automatic checks and the `fetch` half of script probes). A `securitypolicyviolation` that is **enforced**, matches the app's **own** policy, has `effectiveDirective` `connect-src`, and whose `blockedURI` has one of those origins:
+The core keeps the set of URLs it fetches itself: each checked origin's root and each script probe's URL (`new URL(url).href`). A `securitypolicyviolation` that is **enforced**, matches the app's **own** policy, has `effectiveDirective` `connect-src`, and whose `blockedURI` **equals** one of those URLs:
 
-- marks that origin's check inconclusive;
+- marks that check inconclusive;
 - sets no status and calls no `onOwnPolicyViolation` (it is the canary's own request, not the app's).
 
 The browser still sends the violation to the app's CSP reporting endpoint, if it has one â€” one report per checked origin per page load. The README says so and tells apps to add their vendor origins to `connect-src`, or to mark those features `lazy`.

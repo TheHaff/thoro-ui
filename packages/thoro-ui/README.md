@@ -20,6 +20,8 @@ npm install @thoro/ui@beta
 
 **Beta:** the API may change before 1.0. Please [report problems](https://github.com/TheHaff/thoro-ui/issues).
 
+**Upgrading from 0.1:** `start()` is now eager — it checks every vendor origin straight away — and `script` probes now also `fetch` their URL. Both need your vendor origins in `connect-src` (see [Eager checks and `connect-src`](#eager-checks-and-connect-src)); set `lazy: true` on `createCanary` to keep 0.1's start-up behaviour.
+
 ## Theming
 
 Every component reads the same custom properties: `--thoro-bg`, `--thoro-fg`, `--thoro-border`, `--thoro-accent`, `--thoro-radius`, `--thoro-font`. Set them on `:root` to theme the whole collection, or on one tag to theme one component:
@@ -88,18 +90,20 @@ Browsers give a page no way to read its own CSP headers, so the canary recognise
 
 `start()` sends one `HEAD` request (`no-cors`, no cookies, no referrer) to the root of each vendor origin, unless the feature has its own `probe` or is `lazy`. Any answer means the vendor is reachable. Wildcard (`https://*.vendor.example`) and `ws(s)` origins can't be checked this way, so they're lazy.
 
-These checks need the origins in your `connect-src`. If your policy doesn't allow them, the check is inconclusive — nothing is shown and `onOwnPolicyViolation` isn't called — but the browser still sends your CSP reporting endpoint one violation report per origin per page load. Add the origins to `connect-src`, or set `lazy: true` on those features (or on `createCanary` for all of them).
+These checks need the origins in your `connect-src`, and so does the `fetch` half of a `script` probe. If your policy doesn't allow them, the check is inconclusive — nothing is shown and `onOwnPolicyViolation` isn't called, and a `script` probe falls back to its preload alone — but the browser still sends your CSP reporting endpoint one violation report per check per page load. Add the origins to `connect-src`, or set `lazy: true` on those features (or on `createCanary` for all of them).
+
+The canary recognises its own checks by their exact URL: the origin's root (`https://vendor.example/`) and each `script` probe's URL. If your app requests one of those exact URLs itself and your CSP blocks it, that violation is treated as the canary's and not reported through `onOwnPolicyViolation`.
 
 #### Features
 
-| field     | meaning                                                                                                                                                                                                                                                                     |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`      | Stable id, used by `report()` and to remember dismissal.                                                                                                                                                                                                                    |
-| `label`   | Short name shown to the user.                                                                                                                                                                                                                                               |
-| `impact`  | One sentence on what won't work.                                                                                                                                                                                                                                            |
-| `origins` | CSP host-source syntax: `https://host`, `https://*.host`, `wss://host:8443`. No paths. Also the list IT is asked to allow.                                                                                                                                                  |
-| `probe`   | Optional startup check that replaces the automatic one: `script` (preload plus a `fetch`; never runs it), `style` (a stylesheet that never applies), `image`, `fetch` (`no-cors`; needs the origin in your `connect-src`), or `custom` (`run(signal) => Promise<boolean>`). |
-| `lazy`    | Skip the automatic start-up check for this feature. Overrides the `lazy` option.                                                                                                                                                                                            |
+| field     | meaning                                                                                                                                                                                                                                                                                                                |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`      | Stable id, used by `report()` and to remember dismissal.                                                                                                                                                                                                                                                               |
+| `label`   | Short name shown to the user.                                                                                                                                                                                                                                                                                          |
+| `impact`  | One sentence on what won't work.                                                                                                                                                                                                                                                                                       |
+| `origins` | CSP host-source syntax: `https://host`, `https://*.host`, `wss://host:8443`. No paths. Also the list IT is asked to allow.                                                                                                                                                                                             |
+| `probe`   | Optional startup check that replaces the automatic one: `script` (preload plus a `fetch` of the same URL, which needs `connect-src`; never runs it), `style` (a stylesheet that never applies), `image`, `fetch` (`no-cors`; needs the origin in your `connect-src`), or `custom` (`run(signal) => Promise<boolean>`). |
+| `lazy`    | Skip the automatic start-up check for this feature. Overrides the `lazy` option.                                                                                                                                                                                                                                       |
 
 ### The element
 

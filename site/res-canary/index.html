@@ -316,8 +316,8 @@ thoro-res-canary,
               it.
             </li>
             <li>
-              Eager checks need your vendors in <code>connect-src</code>; without it they stay silent, but your CSP
-              reports get one entry per origin.
+              Eager checks, and the <code>fetch</code> half of <code>script</code> probes, need your vendors in
+              <code>connect-src</code>; without it they stay silent, but your CSP reports get one entry per check.
             </li>
           </ul>
         </section>
