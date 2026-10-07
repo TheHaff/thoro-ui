@@ -43,7 +43,7 @@ Shadow DOM keeps your page's CSS out; each component also exposes `::part()` nam
 
 Your own Content Security Policy (CSP) allows your support chat, your e-signature SDK, your CDN. Some users still can't load them: a browser extension adds a stricter CSP, a corporate proxy injects one, or an ad blocker or firewall drops the request. Your app isn't told; the user just sees something missing. The canary notices, explains what won't work, and hands them the allowlist.
 
-Core ≤ 2.5 KB, element ≤ 4 KB (gzip).
+Gzipped budgets, each entry on its own: core ≤ 2.5 KB, element ≤ 4 KB. The element doesn't include the core, so the drop-in banner (`createCanary` + `mountBanner`) ships about 4.9 KB in total.
 
 ### Quick start
 

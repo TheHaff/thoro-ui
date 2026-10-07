@@ -38,7 +38,7 @@ docs/specs, docs/plans
 - **Everything in `packages/thoro-ui/src/` must run under the strictest CSP** (canary spec §8): constructed stylesheets only, DOM built with `createElement`/`createElementNS`/`textContent`, no `innerHTML`, no `eval`/`new Function`/string timers, no network requests other than probes and the start-up checks (eager spec). React code included: no `style` props, no `dangerouslySetInnerHTML`.
 - **Nothing touches `window`, `document` or `customElements` at import time.**
 - **Collection names** (collection spec §2): tags `thoro-<name>`, events `<name>-<action>`, storage keys `thoro-ui:<name>:<what>`, theme variables `--thoro-*`.
-- **Each component has its own size budget**, set in its spec and enforced by `pnpm size`. Don't raise one without the maintainer's agreement; trim first. Canary: core ≤ 2.5 KB, element ≤ 4 KB gzip.
+- **Each component has its own size budget**, set in its spec and enforced by `pnpm size`. Don't raise one without the maintainer's agreement; trim first. Canary: core ≤ 2.5 KB, element ≤ 4 KB gzip, each entry on its own (core + element together ≈ 4.9 KB, measured 2026-10-07).
 - **Publishing to npm is the maintainer's step.** Never run `npm publish` / `pnpm publish`.
 
 ## Commands
@@ -80,7 +80,7 @@ Verified on 2026-09-29 in a throwaway check before the first plan was written; t
   - supports constructed stylesheets and `adoptedStyleSheets`, upgrading an element whose properties were set before definition, `addEventListener`'s `signal` option, `Intl.ListFormat`, and `navigator.clipboard` (spy on `writeText`);
   - a synthetic `securitypolicyviolation` works as `new Event(…)` plus `Object.assign` for `blockedURI`, `originalPolicy`, `disposition` and `effectiveDirective`.
 - **Playwright on strict-CSP pages:** the plan uses only `page.goto`, `page.evaluate` and `expect.poll`, and avoids `page.waitForFunction` as a precaution. If a strict-page test reports a `script-src`/`trusted-types` violation with `blockedURI` `eval`, suspect the test tooling before the package.
-- **Playwright Firefox inside an agent sandbox (macOS):** Firefox exits at launch with "Could not find profile folder". It reads `~/Library/Application Support/Firefox` at startup even when given its own profile, and the Claude Code sandbox blocks that folder along with other browser profile folders. Chromium and WebKit are unaffected. Run `pnpm -C packages/thoro-ui test:browser --project=firefox` from a normal terminal, or rely on CI. Don't widen the sandbox to that folder: it holds the user's real browser profile.
+- **Playwright Firefox on the maintainer's Mac (macOS 27):** Firefox exits at launch with "Could not find profile folder" — in the agent sandbox and in a normal terminal alike. It reads `~/Library/Application Support/Firefox` at startup even when given its own profile, and macOS refuses that folder (`ls` gives "Operation not permitted", even with `sudo`: a privacy protection, checked 2026-10-07); the Claude Code sandbox blocks it as well. Chromium and WebKit are unaffected. Rely on CI for Firefox: it runs all three engines plus the tracking-protection project. Granting the terminal Full Disk Access would probably lift the macOS block (untested). Don't widen the agent sandbox to that folder: it holds the user's real browser profile.
 - **GitHub Actions** current majors at planning time: `actions/checkout@v7`, `actions/setup-node@v7`, `pnpm/action-setup@v6`.
 
 ## Code style
