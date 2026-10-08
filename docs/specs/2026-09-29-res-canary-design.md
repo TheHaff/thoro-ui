@@ -294,16 +294,16 @@ Sets the `hidden` attribute on the host (and renders no children) when the list 
 ```
 :host
 └ div  part="root"  role="region"  aria-label={title}
-  ├ svg  (warning icon, aria-hidden)
+  ├ svg  part="icon"  (warning icon, aria-hidden)
   ├ div  (body)
   │  ├ p  part="summary"  role="status"
   │  │  ├ span  part="title"   "{title}: {labels}."
   │  │  ├ " {cause}"
   │  │  └ span  (visually hidden; receives {copied} after a successful copy)
   │  └ details  part="details"
-  │     ├ summary  {details}
+  │     ├ summary  part="toggle"  {details}
   │     ├ ul  part="list"      li: "{label} — {impact}"
-  │     ├ p   {itAsk}
+  │     ├ p   part="ask"       {itAsk}
   │     ├ pre part="origins"   one origin per line, deduplicated, sorted
   │     └ button part="copy"   {copy}
   └ button  part="dismiss"  aria-label={dismiss}   ×
@@ -327,7 +327,7 @@ Shadow DOM keeps host CSS out, so theming goes through CSS custom properties and
 | `--thoro-radius` | corner radius (inline only) |
 | `--thoro-font`   | font family                 |
 
-Parts: `root`, `summary`, `title`, `details`, `list`, `origins`, `copy`, `dismiss`.
+Parts: `root`, `icon`, `summary`, `title`, `details`, `toggle`, `list`, `ask`, `origins`, `copy`, `dismiss` (`icon`, `toggle` and `ask` added 2026-10-08, so every visible piece can be styled and the React variant's `classNames` keys match).
 
 Defaults are a neutral amber warning palette with a `prefers-color-scheme: dark` variant. `banner` is full width with a bottom border and no radius; `inline` is a bordered card. The element has no transitions; any added later must respect `prefers-reduced-motion`.
 

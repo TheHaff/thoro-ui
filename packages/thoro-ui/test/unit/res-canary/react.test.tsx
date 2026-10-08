@@ -96,6 +96,33 @@ describe('<ResCanary>', () => {
     expect([...used].sort()).toEqual([...defined].sort())
   })
 
+  it("adds classNames to each part after the part's own classes", () => {
+    const names = [
+      'root',
+      'icon',
+      'summary',
+      'title',
+      'details',
+      'toggle',
+      'list',
+      'ask',
+      'origins',
+      'copy',
+      'dismiss',
+    ] as const
+    const classNames = Object.fromEntries(names.map(name => [name, `app-${name} extra`]))
+    render({ canary: canaryWith('chat'), className: 'mine', classNames })
+    for (const name of names) {
+      // getAttribute, not classList: the icon is an SVG element.
+      const own =
+        name === 'copy' || name === 'dismiss'
+          ? `thoro-res-canary__button thoro-res-canary__${name}`
+          : `thoro-res-canary__${name}`
+      expect(part(name)?.getAttribute('class')).toBe(`${own} app-${name} extra`)
+    }
+    expect(host.firstElementChild?.getAttribute('class')).toBe('thoro-res-canary thoro-res-canary--inline mine')
+  })
+
   it('in controlled mode renders only its items and ignores the canary', () => {
     const canary = canaryWith('chat')
     render({ canary, items: [] })

@@ -5,9 +5,18 @@ import { originsText, summaryText } from '../ui/render.ts'
 import { selectContents } from '../ui/select.ts'
 import { resolveStrings, type CanaryStrings } from '../ui/strings.ts'
 
+/** Added to the part's own classes, so utility classes and CSS modules can style it. Keys match the element's parts. */
+type ClassNames = Partial<
+  Record<
+    'ask' | 'copy' | 'details' | 'dismiss' | 'icon' | 'list' | 'origins' | 'root' | 'summary' | 'title' | 'toggle',
+    string
+  >
+>
+
 export type ResCanaryProps = {
   canary?: Canary
   className?: string
+  classNames?: ClassNames
   items?: readonly BlockedFeature[]
   lang?: string
   onCopy?: (detail: CanaryCopyDetail) => void
@@ -26,7 +35,17 @@ const cls = (...names: string[]): string => names.map(name => `${BLOCK}__${name}
 
 /** Native React rendering of the canary: the element's structure and text, without a custom element. */
 export function ResCanary(props: ResCanaryProps): ReactElement | null {
-  const { canary, className, items, lang, onCopy, onDismiss, strings: overrides, variant = 'inline' } = props
+  const {
+    canary,
+    className,
+    classNames,
+    items,
+    lang,
+    onCopy,
+    onDismiss,
+    strings: overrides,
+    variant = 'inline',
+  } = props
   // Controlled mode ignores the canary entirely, so it doesn't even subscribe.
   const source = items === undefined ? canary : undefined
   // The server snapshot is always empty: a block can reach the canary while the HTML is still parsing,
@@ -67,10 +86,14 @@ export function ResCanary(props: ResCanaryProps): ReactElement | null {
     if (items === undefined) canary?.dismiss()
   }
 
+  // The part's own classes come first, then the app's from classNames.
+  const part = (name: keyof ClassNames, ...more: string[]): string =>
+    [cls(...more, name), classNames?.[name]].filter(Boolean).join(' ')
+
   return (
     <div className={[BLOCK, `${BLOCK}--${variant}`, className].filter(Boolean).join(' ')}>
-      <div aria-label={strings.title} className={cls('root')} role="region">
-        <svg aria-hidden="true" className={cls('icon')} viewBox="0 0 24 24">
+      <div aria-label={strings.title} className={part('root')} role="region">
+        <svg aria-hidden="true" className={part('icon')} viewBox="0 0 24 24">
           <path
             d="M12 3 2 21h20L12 3Zm0 6v5m0 3v.01"
             fill="none"
@@ -81,27 +104,27 @@ export function ResCanary(props: ResCanaryProps): ReactElement | null {
           />
         </svg>
         <div className={cls('body')}>
-          <p className={cls('summary')} role="status">
-            <span className={cls('title')}>{summaryText(shown, strings, locale)}</span> {strings.cause}
+          <p className={part('summary')} role="status">
+            <span className={part('title')}>{summaryText(shown, strings, locale)}</span> {strings.cause}
             <span className={cls('visually-hidden')}>{copied ? strings.copied : ''}</span>
           </p>
-          <details className={cls('details')}>
-            <summary className={cls('toggle')}>{strings.details}</summary>
-            <ul className={cls('list')}>
+          <details className={part('details')}>
+            <summary className={part('toggle')}>{strings.details}</summary>
+            <ul className={part('list')}>
               {shown.map(item => (
                 <li key={item.id}>{`${item.label} — ${item.impact}`}</li>
               ))}
             </ul>
-            <p className={cls('ask')}>{strings.itAsk}</p>
-            <pre className={cls('origins')} ref={origins}>
+            <p className={part('ask')}>{strings.itAsk}</p>
+            <pre className={part('origins')} ref={origins}>
               {text}
             </pre>
-            <button className={cls('button', 'copy')} onClick={() => void copy()} type="button">
+            <button className={part('copy', 'button')} onClick={() => void copy()} type="button">
               {copied ? strings.copied : strings.copy}
             </button>
           </details>
         </div>
-        <button aria-label={strings.dismiss} className={cls('button', 'dismiss')} onClick={dismiss} type="button">
+        <button aria-label={strings.dismiss} className={part('dismiss', 'button')} onClick={dismiss} type="button">
           ×
         </button>
       </div>

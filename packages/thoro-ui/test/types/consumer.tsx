@@ -12,4 +12,6 @@ const canary = createCanary({
 
 defineResCanaryElement('my-canary')
 void mountBanner
-void (<ResCanary canary={canary} />)
+void (<ResCanary canary={canary} classNames={{ copy: 'rounded-full', toggle: 'underline' }} />)
+// @ts-expect-error: classNames takes the documented part names only
+void (<ResCanary canary={canary} classNames={{ button: 'rounded-full' }} />)

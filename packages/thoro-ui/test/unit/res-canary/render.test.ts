@@ -76,10 +76,13 @@ describe('renderCanary', () => {
     const parts = [...root.querySelectorAll('[part]')].map(node => node.getAttribute('part'))
     expect([root.getAttribute('part'), ...parts]).toEqual([
       'root',
+      'icon',
       'summary',
       'title',
       'details',
+      'toggle',
       'list',
+      'ask',
       'origins',
       'copy',
       'dismiss',

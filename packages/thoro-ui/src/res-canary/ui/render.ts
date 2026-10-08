@@ -47,9 +47,9 @@ export function renderCanary(
   const details = h(
     'details',
     { class: 'details', part: 'details' },
-    h('summary', { class: 'toggle' }, strings.details),
+    h('summary', { class: 'toggle', part: 'toggle' }, strings.details),
     h('ul', { class: 'list', part: 'list' }, ...items.map(item => h('li', {}, `${item.label} — ${item.impact}`))),
-    h('p', { class: 'ask' }, strings.itAsk),
+    h('p', { class: 'ask', part: 'ask' }, strings.itAsk),
     origins,
     copy,
   )
@@ -93,6 +93,7 @@ function warningIcon(): SVGSVGElement {
   svg.setAttribute('viewBox', '0 0 24 24')
   svg.setAttribute('aria-hidden', 'true')
   svg.setAttribute('class', 'icon')
+  svg.setAttribute('part', 'icon')
   const path = document.createElementNS(SVG_NS, 'path')
   path.setAttribute('d', 'M12 3 2 21h20L12 3Zm0 6v5m0 3v.01')
   path.setAttribute('fill', 'none')

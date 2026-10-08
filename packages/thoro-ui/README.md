@@ -119,7 +119,7 @@ import '@thoro/ui/res-canary/element' // defines <thoro-res-canary>
 
 Both events bubble, cross shadow boundaries and are cancelable; `preventDefault()` on `res-canary-dismiss` skips the uncontrolled dismiss.
 
-Parts: `root`, `summary`, `title`, `details`, `list`, `origins`, `copy`, `dismiss`. `--thoro-radius` applies to the inline card only.
+Parts: `root`, `icon`, `summary`, `title`, `details`, `toggle`, `list`, `ask`, `origins`, `copy`, `dismiss`. `--thoro-radius` applies to the inline card only.
 
 #### React
 
@@ -143,22 +143,32 @@ export function Layout({ children }) {
 }
 ```
 
-| prop        | meaning                                                                                            |
-| ----------- | -------------------------------------------------------------------------------------------------- |
-| `canary`    | Uncontrolled: subscribes and dismisses itself.                                                     |
-| `items`     | Controlled: renders only these (`snapshot.blocked`); `canary` is ignored.                          |
-| `variant`   | `'banner'` or `'inline'` (default).                                                                |
-| `strings`   | Text overrides, same keys as the element.                                                          |
-| `lang`      | Locale for joining labels; defaults to `<html lang>`. Pass it when you render items on the server. |
-| `onDismiss` | `(ids) => void`, called when × is pressed; uncontrolled mode then dismisses the canary.            |
-| `onCopy`    | `({ text, copied }) => void`, called after **Copy for IT**.                                        |
-| `className` | Added to the root (`.thoro-res-canary`).                                                           |
+| prop         | meaning                                                                                                                                               |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `canary`     | Uncontrolled: subscribes and dismisses itself.                                                                                                        |
+| `items`      | Controlled: renders only these (`snapshot.blocked`); `canary` is ignored.                                                                             |
+| `variant`    | `'banner'` or `'inline'` (default).                                                                                                                   |
+| `strings`    | Text overrides, same keys as the element.                                                                                                             |
+| `lang`       | Locale for joining labels; defaults to `<html lang>`. Pass it when you render items on the server.                                                    |
+| `onDismiss`  | `(ids) => void`, called when × is pressed; uncontrolled mode then dismisses the canary.                                                               |
+| `onCopy`     | `({ text, copied }) => void`, called after **Copy for IT**.                                                                                           |
+| `className`  | Added to the outer wrapper (`.thoro-res-canary`), where the `--thoro-*` variables apply.                                                              |
+| `classNames` | Extra classes per part, added after the built-in ones: `{ copy: 'rounded-full px-3' }`. Keys are the element's part names; `root` is the visible box. |
 
 How it differs from the element:
 
 - **Take over state with controlled mode**, not `preventDefault()`.
 - **It renders into your page, not a shadow root.** Classes are prefixed (`.thoro-res-canary__*`), but element rules on your page such as `button { … }` apply. Skip `react.css` to style it entirely yourself; the `--thoro-*` variables work either way.
 - **The entry starts with `'use client'`**, so frameworks with React Server Components treat it as a client component.
+
+**Tailwind CSS v4:** import `react.css` from your stylesheet into Tailwind's `components` layer, not from JavaScript:
+
+```css
+@import 'tailwindcss';
+@import '@thoro/ui/res-canary/react.css' layer(components);
+```
+
+Your utilities in `classNames` then override the canary's styles, and the canary's styles still override Tailwind's reset. Imported from JavaScript, the CSS sits outside any cascade layer, so it beats every utility. Without Tailwind, importing it into any layer (`layer(thoro)`) lets all your unlayered CSS override it, page-wide rules such as `button { … }` included.
 
 [`examples/react/app.tsx`](https://github.com/TheHaff/thoro-ui/blob/main/examples/react/app.tsx) shows `<ResCanary>` and a fully custom UI built on `useSyncExternalStore(canary.subscribe, canary.getSnapshot)`. The web component works in React 19 too, since React 19 supports custom elements.
 
